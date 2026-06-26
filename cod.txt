@@ -1,0 +1,2443 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سیستم جامع حسابداری آوامان</title>
+<style>
+/* ===== RESET & BASE ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+@font-face{font-family:'Vazir';src:local('Tahoma'),local('Segoe UI')}
+:root{
+--primary:#4f46e5;--primary-light:#818cf8;--primary-dark:#3730a3;
+--secondary:#0891b2;--success:#059669;--warning:#d97706;--danger:#dc2626;
+--bg:#f1f5f9;--sidebar-bg:#1e293b;--sidebar-hover:#334155;
+--card:#fff;--text:#1e293b;--text-light:#64748b;--border:#e2e8f0;
+--shadow:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);
+--shadow-lg:0 10px 15px -3px rgba(0,0,0,.1);
+--radius:0.5rem;--transition:all .2s ease;
+}
+html{font-size:14px;scroll-behavior:smooth}
+body{font-family:Tahoma,'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow:hidden;height:100vh}
+a{text-decoration:none;color:inherit}
+button{cursor:pointer;font-family:inherit;border:none;outline:none}
+input,select,textarea{font-family:inherit;outline:none}
+table{border-collapse:collapse;width:100%}
+
+/* ===== LAYOUT ===== */
+#app{display:flex;height:100vh;overflow:hidden}
+#sidebar{width:260px;background:var(--sidebar-bg);color:#e2e8f0;display:flex;flex-direction:column;transition:var(--transition);position:relative;z-index:100;flex-shrink:0}
+#sidebar.collapsed{width:60px}
+#sidebar.collapsed .sidebar-text,#sidebar.collapsed .submenu,#sidebar.collapsed .sidebar-header span,#sidebar.collapsed .menu-arrow{display:none}
+#sidebar.collapsed .sidebar-header{justify-content:center;padding:1rem 0}
+#sidebar.collapsed .menu-item>a{justify-content:center;padding:.75rem 0}
+#sidebar.collapsed .menu-item>a svg{margin:0}
+.sidebar-header{display:flex;align-items:center;gap:.75rem;padding:1.25rem 1rem;border-bottom:1px solid rgba(255,255,255,.1)}
+.sidebar-header svg{width:32px;height:32px;fill:var(--primary-light)}
+.sidebar-header span{font-size:1.1rem;font-weight:700;color:#fff;white-space:nowrap}
+.sidebar-nav{flex:1;overflow-y:auto;padding:.5rem 0}
+.sidebar-nav::-webkit-scrollbar{width:4px}
+.sidebar-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:4px}
+.menu-item>a{display:flex;align-items:center;gap:.75rem;padding:.6rem 1rem;color:#cbd5e1;transition:var(--transition);border-radius:.375rem;margin:2px .5rem;font-size:.85rem}
+.menu-item>a:hover,.menu-item>a.active{background:var(--sidebar-hover);color:#fff}
+.menu-item>a.active{background:var(--primary);color:#fff}
+.menu-item>a svg{width:20px;height:20px;flex-shrink:0;fill:currentColor}
+.menu-arrow{margin-right:auto;transition:transform .2s;font-size:.7rem}
+.menu-item.open>.menu-arrow-parent .menu-arrow{transform:rotate(90deg)}
+.submenu{max-height:0;overflow:hidden;transition:max-height .3s ease}
+.menu-item.open>.submenu{max-height:500px}
+.submenu a{display:block;padding:.4rem 1rem .4rem 2.75rem;color:#94a3b8;font-size:.8rem;transition:var(--transition);border-radius:.375rem;margin:1px .5rem}
+.submenu a:hover,.submenu a.active{color:#fff;background:rgba(255,255,255,.05)}
+.submenu a.active{color:var(--primary-light)}
+
+/* ===== MAIN ===== */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#topbar{background:#fff;border-bottom:1px solid var(--border);padding:0 1.5rem;height:56px;display:flex;align-items:center;gap:1rem;flex-shrink:0;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.topbar-toggle{background:none;padding:.5rem;border-radius:.375rem;color:var(--text)}
+.topbar-toggle:hover{background:var(--bg)}
+.topbar-search{position:relative;flex:1;max-width:400px}
+.topbar-search input{width:100%;padding:.5rem 2.25rem .5rem .75rem;border:1px solid var(--border);border-radius:.375rem;background:var(--bg);font-size:.85rem}
+.topbar-search svg{position:absolute;right:.65rem;top:50%;transform:translateY(-50%);width:16px;height:16px;fill:var(--text-light)}
+.topbar-actions{display:flex;align-items:center;gap:.5rem;margin-right:auto}
+.topbar-btn{position:relative;background:none;padding:.5rem;border-radius:.375rem;color:var(--text-light)}
+.topbar-btn:hover{background:var(--bg);color:var(--text)}
+.topbar-btn .badge{position:absolute;top:2px;left:2px;width:16px;height:16px;background:var(--danger);color:#fff;border-radius:50%;font-size:.6rem;display:flex;align-items:center;justify-content:center}
+.topbar-user{display:flex;align-items:center;gap:.5rem;padding:.375rem .75rem;border-radius:.375rem;cursor:pointer}
+.topbar-user:hover{background:var(--bg)}
+.topbar-avatar{width:32px;height:32px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700}
+.topbar-user-info{font-size:.8rem}
+.topbar-user-info div:first-child{font-weight:600}
+.topbar-user-info div:last-child{color:var(--text-light);font-size:.7rem}
+
+/* ===== CONTENT ===== */
+#content{flex:1;overflow-y:auto;padding:1.5rem}
+#content::-webkit-scrollbar{width:6px}
+#content::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
+.breadcrumb{display:flex;align-items:center;gap:.5rem;font-size:.8rem;color:var(--text-light);margin-bottom:1rem}
+.breadcrumb a{color:var(--primary)}
+.breadcrumb a:hover{text-decoration:underline}
+.page-title{font-size:1.35rem;font-weight:700;margin-bottom:1.5rem;display:flex;align-items:center;gap:.75rem}
+
+/* ===== CARDS ===== */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:1.5rem}
+.stat-card{background:var(--card);border-radius:var(--radius);padding:1.25rem;box-shadow:var(--shadow);display:flex;align-items:center;gap:1rem;transition:var(--transition)}
+.stat-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px)}
+.stat-icon{width:48px;height:48px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.stat-icon svg{width:24px;height:24px;fill:#fff}
+.stat-info h3{font-size:.8rem;color:var(--text-light);font-weight:400;margin-bottom:.25rem}
+.stat-info .value{font-size:1.35rem;font-weight:700}
+.stat-info .change{font-size:.75rem;margin-top:.25rem}
+.change.up{color:var(--success)}
+.change.down{color:var(--danger)}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:1.5rem}
+.card-header{padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem}
+.card-header h3{font-size:1rem;font-weight:600}
+.card-body{padding:1.25rem}
+.card-footer{padding:.75rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+
+/* ===== BUTTONS ===== */
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.5rem 1rem;border-radius:.375rem;font-size:.82rem;font-weight:500;transition:var(--transition);border:1px solid transparent}
+.btn svg{width:16px;height:16px;fill:currentColor}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-dark)}
+.btn-success{background:var(--success);color:#fff}.btn-success:hover{opacity:.9}
+.btn-warning{background:var(--warning);color:#fff}.btn-warning:hover{opacity:.9}
+.btn-danger{background:var(--danger);color:#fff}.btn-danger:hover{opacity:.9}
+.btn-secondary{background:#64748b;color:#fff}.btn-secondary:hover{background:#475569}
+.btn-outline{border:1px solid var(--border);background:#fff;color:var(--text)}.btn-outline:hover{background:var(--bg)}
+.btn-sm{padding:.35rem .65rem;font-size:.75rem}
+.btn-xs{padding:.2rem .45rem;font-size:.7rem}
+.btn-group{display:flex;gap:.5rem;flex-wrap:wrap}
+
+/* ===== TABLES ===== */
+.table-container{overflow-x:auto}
+.data-table{width:100%;font-size:.82rem}
+.data-table thead{background:var(--bg)}
+.data-table th{padding:.65rem .75rem;text-align:right;font-weight:600;color:var(--text-light);white-space:nowrap;cursor:pointer;user-select:none;border-bottom:2px solid var(--border)}
+.data-table th:hover{color:var(--text)}
+.data-table th .sort-icon{font-size:.6rem;margin-right:.25rem}
+.data-table td{padding:.6rem .75rem;border-bottom:1px solid var(--border);vertical-align:middle}
+.data-table tbody tr:hover{background:#f8fafc}
+.data-table .actions{display:flex;gap:.25rem}
+.table-toolbar{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap}
+.table-search{position:relative}
+.table-search input{padding:.45rem .75rem .45rem 2rem;border:1px solid var(--border);border-radius:.375rem;font-size:.82rem;width:250px}
+.table-search svg{position:absolute;right:.6rem;top:50%;transform:translateY(-50%);width:14px;height:14px;fill:var(--text-light)}
+.pagination{display:flex;align-items:center;gap:.25rem;font-size:.8rem}
+.pagination button{padding:.35rem .6rem;border:1px solid var(--border);background:#fff;border-radius:.25rem;color:var(--text);font-size:.78rem}
+.pagination button:hover{background:var(--bg)}
+.pagination button.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.pagination button:disabled{opacity:.4;cursor:not-allowed}
+.status-badge{padding:.2rem .5rem;border-radius:1rem;font-size:.7rem;font-weight:500}
+.status-active{background:#d1fae5;color:#065f46}
+.status-inactive{background:#fee2e2;color:#991b1b}
+.status-pending{background:#fef3c7;color:#92400e}
+.status-paid{background:#d1fae5;color:#065f46}
+.status-unpaid{background:#fee2e2;color:#991b1b}
+
+/* ===== FORMS ===== */
+.form-group{margin-bottom:1rem}
+.form-label{display:block;font-size:.82rem;font-weight:500;margin-bottom:.35rem;color:var(--text)}
+.form-label .required{color:var(--danger);margin-right:.15rem}
+.form-control{width:100%;padding:.5rem .75rem;border:1px solid var(--border);border-radius:.375rem;font-size:.85rem;transition:var(--transition);background:#fff}
+.form-control:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+.form-control.error{border-color:var(--danger)}
+.form-error{color:var(--danger);font-size:.72rem;margin-top:.2rem}
+.form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem}
+select.form-control{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z' fill='%2364748b'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left .75rem center;padding-left:2rem}
+textarea.form-control{resize:vertical;min-height:80px}
+
+/* ===== MODAL ===== */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;animation:fadeIn .2s}
+.modal{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow-lg);width:95%;max-width:600px;max-height:90vh;display:flex;flex-direction:column;animation:slideUp .3s}
+.modal.modal-lg{max-width:900px}
+.modal.modal-sm{max-width:400px}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border)}
+.modal-header h3{font-size:1rem;font-weight:600}
+.modal-close{background:none;font-size:1.25rem;color:var(--text-light);padding:.25rem}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:1.25rem;overflow-y:auto;flex:1}
+.modal-footer{padding:.75rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:flex-start;gap:.5rem}
+
+/* ===== NOTIFICATIONS ===== */
+#notification-container{position:fixed;top:1rem;left:1rem;z-index:2000;display:flex;flex-direction:column;gap:.5rem;max-width:350px}
+.notification{padding:.75rem 1rem;border-radius:var(--radius);color:#fff;font-size:.82rem;display:flex;align-items:center;gap:.5rem;animation:slideLeft .3s;box-shadow:var(--shadow-lg);cursor:pointer}
+.notification.success{background:var(--success)}
+.notification.error{background:var(--danger)}
+.notification.warning{background:var(--warning)}
+.notification.info{background:var(--primary)}
+
+/* ===== TABS ===== */
+.tabs{display:flex;border-bottom:2px solid var(--border);margin-bottom:1rem;gap:0;overflow-x:auto}
+.tab-btn{padding:.6rem 1.25rem;font-size:.82rem;background:none;color:var(--text-light);border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:var(--transition)}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* ===== ACCORDION ===== */
+.accordion-item{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:.5rem}
+.accordion-header{padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:var(--bg);font-size:.85rem;font-weight:500;border-radius:var(--radius)}
+.accordion-header:hover{background:#e2e8f0}
+.accordion-body{padding:1rem;display:none;border-top:1px solid var(--border)}
+.accordion-item.open .accordion-body{display:block}
+.accordion-item.open .accordion-header .acc-icon{transform:rotate(180deg)}
+
+/* ===== CHARTS ===== */
+.chart-container{position:relative;width:100%;height:300px}
+.chart-container canvas{width:100%!important;height:100%!important}
+.charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:1rem;margin-bottom:1.5rem}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideLeft{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:768px){
+  #sidebar{position:fixed;right:0;top:0;height:100%;transform:translateX(100%);z-index:200}
+  #sidebar.mobile-open{transform:translateX(0)}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .form-row{grid-template-columns:1fr}
+  .table-toolbar{flex-direction:column;align-items:stretch}
+  .table-search input{width:100%}
+  .charts-grid{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .stats-grid{grid-template-columns:1fr}
+  #content{padding:1rem}
+}
+.mobile-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150}
+.mobile-overlay.show{display:block}
+
+/* ===== MISC ===== */
+.text-primary{color:var(--primary)}.text-success{color:var(--success)}.text-danger{color:var(--danger)}.text-warning{color:var(--warning)}.text-muted{color:var(--text-light)}
+.text-center{text-align:center}.text-left{text-align:left}
+.mt-1{margin-top:.5rem}.mt-2{margin-top:1rem}.mb-1{margin-bottom:.5rem}.mb-2{margin-bottom:1rem}
+.d-flex{display:flex}.gap-1{gap:.5rem}.gap-2{gap:1rem}.items-center{align-items:center}.justify-between{justify-content:space-between}.flex-wrap{flex-wrap:wrap}
+.w-full{width:100%}
+.empty-state{text-align:center;padding:3rem;color:var(--text-light)}
+.empty-state svg{width:64px;height:64px;fill:var(--border);margin-bottom:1rem}
+.dropdown{position:relative}
+.dropdown-menu{position:absolute;top:100%;left:0;background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);min-width:180px;z-index:50;display:none}
+.dropdown-menu.show{display:block}
+.dropdown-menu a,.dropdown-menu button{display:block;width:100%;text-align:right;padding:.5rem .75rem;font-size:.82rem;background:none;color:var(--text);border:none}
+.dropdown-menu a:hover,.dropdown-menu button:hover{background:var(--bg)}
+.tag{display:inline-block;padding:.15rem .5rem;border-radius:1rem;font-size:.7rem;background:var(--bg);color:var(--text-light)}
+.progress-bar{height:6px;background:var(--bg);border-radius:3px;overflow:hidden}
+.progress-bar .fill{height:100%;border-radius:3px;transition:width .5s}
+.activity-item{display:flex;gap:.75rem;padding:.75rem 0;border-bottom:1px solid var(--border)}
+.activity-item:last-child{border:none}
+.activity-dot{width:8px;height:8px;border-radius:50%;margin-top:.4rem;flex-shrink:0}
+.activity-text{font-size:.82rem}
+.activity-time{font-size:.72rem;color:var(--text-light)}
+.print-area{display:none}
+@media print{body *{display:none!important}.print-area{display:block!important;position:fixed;inset:0;background:#fff;z-index:9999}}
+
+/* ===== LOGIN PAGE ===== */
+#login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1e293b 0%,#334155 50%,#1e293b 100%);position:relative;overflow:hidden}
+#login-page::before{content:'';position:absolute;width:600px;height:600px;border-radius:50%;background:rgba(79,70,229,.1);top:-200px;right:-200px}
+#login-page::after{content:'';position:absolute;width:400px;height:400px;border-radius:50%;background:rgba(8,145,178,.08);bottom:-150px;left:-100px}
+.login-card{background:#fff;border-radius:1rem;box-shadow:0 25px 50px rgba(0,0,0,.3);width:420px;max-width:95%;padding:2.5rem;position:relative;z-index:1;animation:slideUp .5s ease}
+.login-logo{text-align:center;margin-bottom:2rem}
+.login-logo .logo-icon{width:72px;height:72px;border-radius:1rem;background:linear-gradient(135deg,var(--primary),var(--primary-dark));display:inline-flex;align-items:center;justify-content:center;margin-bottom:1rem;box-shadow:0 8px 20px rgba(79,70,229,.3)}
+.login-logo .logo-icon svg{width:36px;height:36px;fill:#fff}
+.login-logo h1{font-size:1.6rem;font-weight:700;color:var(--text);margin-bottom:.25rem}
+.login-logo p{color:var(--text-light);font-size:.85rem}
+.login-form .form-group{margin-bottom:1.25rem}
+.login-form .form-label{font-size:.85rem;font-weight:600;margin-bottom:.5rem;display:block;color:var(--text)}
+.login-form .form-control{padding:.7rem 1rem;font-size:.9rem;border-radius:.5rem}
+.login-form .btn-login{width:100%;padding:.75rem;font-size:1rem;font-weight:600;border-radius:.5rem;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border:none;cursor:pointer;transition:var(--transition);margin-top:.5rem}
+.login-form .btn-login:hover{transform:translateY(-1px);box-shadow:0 6px 15px rgba(79,70,229,.4)}
+.login-error{color:var(--danger);font-size:.8rem;margin-top:.5rem;display:none;text-align:center;background:#fee2e2;padding:.5rem;border-radius:.375rem}
+.login-footer{text-align:center;margin-top:1.5rem;font-size:.75rem;color:var(--text-light)}
+.login-input-wrap{position:relative}
+.login-input-wrap svg{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);width:18px;height:18px;fill:var(--text-light)}
+.login-input-wrap input{padding-right:2.5rem}
+.login-toggle-pass{position:absolute;left:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:0}
+.login-toggle-pass svg{width:18px;height:18px;fill:var(--text-light)}
+#app.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="login-page">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+      </div>
+      <h1>سیستم حسابداری آوامان</h1>
+      <p>برای ورود، نام کاربری و رمز عبور خود را وارد کنید</p>
+    </div>
+    <form class="login-form" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label class="form-label">نام کاربری</label>
+        <div class="login-input-wrap">
+          <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          <input type="text" class="form-control" id="login-username" placeholder="نام کاربری را وارد کنید" autocomplete="username" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">رمز عبور</label>
+        <div class="login-input-wrap">
+          <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+          <input type="password" class="form-control" id="login-password" placeholder="رمز عبور را وارد کنید" autocomplete="current-password" required>
+          <button type="button" class="login-toggle-pass" onclick="togglePasswordVisibility()">
+            <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="login-error" class="login-error">نام کاربری یا رمز عبور اشتباه است</div>
+      <button type="submit" class="btn-login">ورود به سیستم</button>
+    </form>
+    <div class="login-footer">
+      سیستم جامع حسابداری آوامان &copy; ۱۴۰۳
+    </div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <!-- Sidebar -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+      <span>حسابداری آوامان</span>
+    </div>
+    <nav class="sidebar-nav" id="sidebar-nav"></nav>
+  </aside>
+
+  <div class="mobile-overlay" id="mobile-overlay"></div>
+
+  <!-- Main -->
+  <main id="main">
+    <header id="topbar">
+      <button class="topbar-toggle" onclick="toggleSidebar()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+      </button>
+      <div class="topbar-search">
+        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input type="text" placeholder="جستجوی سریع..." id="global-search" onkeyup="handleGlobalSearch(event)">
+      </div>
+      <div class="topbar-actions">
+        <button class="topbar-btn" onclick="showNotificationsPanel()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+          <span class="badge" id="notif-badge" style="display:none">0</span>
+        </button>
+        <button class="topbar-btn" onclick="toggleFullscreen()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+        </button>
+        <div class="topbar-user" onclick="toggleUserMenu()">
+          <div class="topbar-avatar">ع</div>
+          <div class="topbar-user-info">
+            <div>علی (مدیر سیستم)</div>
+            <div>ali@avaman.ir</div>
+          </div>
+        </div>
+        <div class="dropdown-menu" id="user-menu">
+          <a href="#" onclick="navigate('settings');return false">⚙️ تنظیمات</a>
+          <a href="#" onclick="showProfile();return false">👤 پروفایل</a>
+          <button onclick="handleLogout()">🚪 خروج از سیستم</button>
+        </div>
+      </div>
+    </header>
+    <div id="content"></div>
+  </main>
+</div>
+
+<div id="modal-container"></div>
+<div id="notification-container"></div>
+
+<script>
+// ===== APPLICATION STATE =====
+const APP = {
+  currentPage: 'dashboard',
+  sidebarCollapsed: false,
+  searchTerm: '',
+  pageStates: {}
+};
+
+// ===== SAMPLE DATA GENERATION =====
+const persianNames = ['علی محمدی','حسن رضایی','محمد حسینی','رضا کریمی','امیر احمدی','سارا موسوی','مریم هاشمی','زهرا علوی','فاطمه نوری','حسین جعفری','مهدی صادقی','احمد رحیمی','نرگس بهرامی','لیلا عباسی','کاوه میرزایی','پریسا قاسمی','بهنام توکلی','شیما حیدری','محسن فتحی','نیلوفر کمالی','سعید باقری','آرمین شریفی','غزل نجفی','پوریا مرادی','هانیه سلطانی','دانیال اکبری','آتنا ملکی','سامان یوسفی','الناز خسروی','بهزاد رستمی'];
+const companyNames = ['فناوران پارس','آسان تجارت','نوآوران صنعت','سپهر کالا','آریا پخش','مهر تجارت','گلستان صنعت','ایرانیان تجارت','فردوس کالا','بازرگانی نوین','طلایی پخش','سبز دشت','البرز تجارت','شرق صنعت','جهان پخش','فرآورده‌های غذایی سحر','تجهیزات صنعتی رضا','مواد اولیه پارسا','بازرگانی آینده','لوازم ایمنی ایران'];
+const productNames = ['مداد مشکی','خودکار آبی','دفتر ۱۰۰ برگ','کاغذ A4','پوشه طلقی','ماشین حساب','پرینتر لیزری','تونر مشکی','هارد اکسترنال','فلش مموری ۳۲','مانیتور ۲۴ اینچ','کیبورد بیسیم','موس بیسیم','هدفون بلوتوث','وبکم HD','میز اداری','صندلی گردان','کمد بایگانی','وایت‌برد','ماژیک وایت‌برد','پاک‌کن وایت‌برد','سیم‌کارت','قاب گوشی','شارژر فندکی','پاوربانک','کابل شارژ','محافظ صفحه','لپ‌تاپ ایسوس','لپ‌تاپ لنوو','تبلت سامسونگ','آیپد اپل','کیس کامپیوتر','رم ۱۶ گیگ','SSD 512','مودم وای‌فای','سوئیچ شبکه','کابل شبکه','پچ پنل','رک شبکه','UPS','نوار چسب','قیچی','منگنه','سوزن منگنه','گیره کاغذ','تقویم رومیزی','سررسید','جامدادی','چسب مایع','لاک غلط‌گیر','کلیپ‌بورد','بشقاب','لیوان','قاشق','چنگال','کارد','سینی','دستمال کاغذی','مایع ظرفشویی','اسفنج','دستکش','کیسه زباله','شوینده','خوشبوکننده','صابون','شامپو','کرم مرطوب‌کننده','مسواک','خمیردندان','نخ دندان','پنبه','باند','الکل','چسب زخم','دماسنج','فشارسنج','ترازو','جعبه کمک','ویتامین C','قرص سردرد','ماسک','دستکش لاتکس','روپوش','کفش ایمنی','عینک ایمنی','کلاه ایمنی','جلیقه ایمنی','گوشی ایمنی','کپسول آتش‌نشانی','تابلو برق','سیم برق','پریز','کلید برق','لامپ LED','پروژکتور','چراغ قوه','باتری قلمی','باتری نیم قلمی','آچار','پیچ‌گوشتی','انبردست'];
+// ===== PROVINCE & CITY DATA =====
+const provinceCities = {
+'آذربایجان شرقی':['تبریز','مراغه','مرند','میانه','اهر','بناب','سراب','هشترود','ملکان','جلفا','شبستر','هریس','ورزقان','کلیبر','چاراویماق','آذرشهر','اسکو','عجب‌شیر','خداآفرین'],
+'آذربایجان غربی':['ارومیه','خوی','مهاباد','بوکان','میاندوآب','سلماس','نقده','پیرانشهر','سردشت','شاهین‌دژ','تکاب','ماکو','اشنویه','چالدران','شوط','پلدشت','چایپاره'],
+'اردبیل':['اردبیل','پارس‌آباد','مشگین‌شهر','خلخال','گرمی','بیله‌سوار','نمین','نیر','کوثر','سرعین'],
+'اصفهان':['اصفهان','کاشان','خمینی‌شهر','نجف‌آباد','شاهین‌شهر','فلاورجان','لنجان','مبارکه','گلپایگان','نائین','اردستان','سمیرم','فریدن','تیران','خوانسار','چادگان','دهاقان','برخوار','خور و بیابانک','فریدون‌شهر','شهرضا'],
+'البرز':['کرج','فردیس','نظرآباد','اشتهارد','هشتگرد','طالقان','ساوجبلاغ','چهارباغ','ماهدشت'],
+'ایلام':['ایلام','دهلران','ایوان','آبدانان','مهران','دره‌شهر','چرداول','ملکشاهی','سیروان','بدره'],
+'بوشهر':['بوشهر','برازجان','کنگان','گناوه','خورموج','جم','دیر','دشتستان','دیلم','عسلویه','تنگستان'],
+'تهران':['تهران','شهریار','اسلامشهر','ری','ورامین','پاکدشت','رباط‌کریم','قدس','ملارد','دماوند','فیروزکوه','پیشوا','پردیس','بهارستان','قرچک','شمیرانات'],
+'چهارمحال و بختیاری':['شهرکرد','بروجن','فارسان','لردگان','اردل','کوهرنگ','کیار','سامان','بن'],
+'خراسان جنوبی':['بیرجند','قائن','فردوس','طبس','نهبندان','سربیشه','درمیان','بشرویه','خوسف','زیرکوه','سرایان'],
+'خراسان رضوی':['مشهد','نیشابور','سبزوار','تربت حیدریه','قوچان','کاشمر','تربت جام','گناباد','چناران','خواف','درگز','تایباد','فریمان','بردسکن','سرخس','رشتخوار','خلیل‌آباد','زاوه','باخرز','جوین','مه‌ولات','بجستان','جغتای','فیروزه','داورزن'],
+'خراسان شمالی':['بجنورد','شیروان','اسفراین','جاجرم','فاروج','مانه و سملقان','گرمه','رازوجرگلان'],
+'خوزستان':['اهواز','دزفول','آبادان','خرمشهر','بهبهان','ماهشهر','شوشتر','اندیمشک','ایذه','مسجدسلیمان','شوش','رامهرمز','امیدیه','هویزه','لالی','باغ‌ملک','هندیجان','گتوند','رامشیر','حمیدیه','کارون','آغاجاری','باوی','شادگان'],
+'زنجان':['زنجان','ابهر','خرمدره','قیدار','ماهنشان','ایجرود','طارم','سلطانیه','خدابنده'],
+'سمنان':['سمنان','شاهرود','دامغان','گرمسار','مهدی‌شهر','آرادان','سرخه','میامی'],
+'سیستان و بلوچستان':['زاهدان','چابهار','ایرانشهر','زابل','سراوان','خاش','نیکشهر','کنارک','سرباز','دلگان','قصرقند','مهرستان','زهک','هیرمند','نیمروز','فنوج','میرجاوه','هامون'],
+'فارس':['شیراز','مرودشت','جهرم','لار','فسا','داراب','کازرون','آباده','اقلید','نی‌ریز','استهبان','فیروزآباد','لامرد','ممسنی','سپیدان','پاسارگاد','خرم‌بید','زرین‌دشت','رستم','قیروکارزین','مهر','بوانات','خنج','گراش','سروستان'],
+'قزوین':['قزوین','تاکستان','آبیک','البرز','بوئین‌زهرا','آوج'],
+'قم':['قم'],
+'کردستان':['سنندج','سقز','مریوان','بانه','قروه','بیجار','کامیاران','دهگلان','دیواندره','سروآباد'],
+'کرمان':['کرمان','رفسنجان','جیرفت','سیرجان','بم','زرند','بردسیر','شهربابک','بافت','کهنوج','راور','انار','رودبارجنوب','منوجان','عنبرآباد','قلعه‌گنج','ریگان','فهرج','نرماشیر','ارزوئیه'],
+'کرمانشاه':['کرمانشاه','اسلام‌آباد غرب','سنقر','کنگاور','هرسین','صحنه','پاوه','جوانرود','گیلان‌غرب','سرپل ذهاب','قصرشیرین','دالاهو','ثلاث‌باباجانی','روانسر'],
+'کهگیلویه و بویراحمد':['یاسوج','دوگنبدان','دهدشت','لیکک','سی‌سخت','چرام','لنده','باشت','بهمئی'],
+'گلستان':['گرگان','گنبدکاووس','علی‌آباد','آق‌قلا','بندرگز','کردکوی','مینودشت','آزادشهر','رامیان','کلاله','گالیکش','مراوه‌تپه','بندرترکمن','گمیشان'],
+'گیلان':['رشت','لاهیجان','بندرانزلی','آستارا','تالش','رودبار','صومعه‌سرا','فومن','لنگرود','رودسر','شفت','سیاهکل','آستانه اشرفیه','رضوانشهر','املش','ماسال'],
+'لرستان':['خرم‌آباد','بروجرد','دورود','الیگودرز','ازنا','کوهدشت','نورآباد','پلدختر','سلسله','چگنی','رومشکان','دوره'],
+'مازندران':['ساری','بابل','آمل','قائم‌شهر','بابلسر','بهشهر','تنکابن','چالوس','نوشهر','رامسر','نکا','جویبار','فریدونکنار','محمودآباد','سوادکوه','گلوگاه','عباس‌آباد','میاندرود','سیمرغ','کلاردشت'],
+'مرکزی':['اراک','ساوه','خمین','محلات','دلیجان','شازند','تفرش','آشتیان','کمیجان','زرندیه','فراهان'],
+'هرمزگان':['بندرعباس','بندرلنگه','قشم','میناب','حاجی‌آباد','رودان','بستک','جاسک','خمیر','پارسیان','سیریک','ابوموسی','بشاگرد'],
+'همدان':['همدان','ملایر','نهاوند','تویسرکان','بهار','اسدآباد','کبودرآهنگ','رزن','فامنین','درگزین'],
+'یزد':['یزد','میبد','اردکان','بافق','تفت','مهریز','اشکذر','ابرکوه','خاتم','بهاباد']
+};
+const provinceNames=Object.keys(provinceCities);
+
+// Helper: get province-city select HTML
+function getProvinceCityHTML(selectedProvince,selectedCity,prefix=''){
+  const pName=prefix?prefix+'_province':'province';
+  const cName=prefix?prefix+'_city':'city';
+  return `<div class="form-group"><label class="form-label">استان</label><select class="form-control" name="${pName}" onchange="updateCityDropdown(this,'${cName}')"><option value="">-- انتخاب استان --</option>${provinceNames.map(p=>`<option value="${p}" ${selectedProvince===p?'selected':''}>${p}</option>`).join('')}</select></div>
+  <div class="form-group"><label class="form-label">شهرستان</label><select class="form-control" name="${cName}" id="select-${cName}"><option value="">-- ابتدا استان را انتخاب کنید --</option>${selectedProvince?provinceCities[selectedProvince].map(c=>`<option value="${c}" ${selectedCity===c?'selected':''}>${c}</option>`).join(''):''}</select></div>`;
+}
+
+function updateCityDropdown(provinceSelect,cityFieldName){
+  const prov=provinceSelect.value;
+  const citySelect=document.getElementById('select-'+cityFieldName);
+  if(!citySelect)return;
+  if(!prov){citySelect.innerHTML='<option value="">-- ابتدا استان را انتخاب کنید --</option>';return;}
+  const cities=provinceCities[prov]||[];
+  citySelect.innerHTML='<option value="">-- انتخاب شهرستان --</option>'+cities.map(c=>`<option value="${c}">${c}</option>`).join('');
+}
+const units = ['عدد','بسته','کارتن','متر','کیلوگرم','لیتر','جفت','دست','رول','قوطی'];
+const categories = ['لوازم التحریر','الکترونیک','مبلمان اداری','شبکه و IT','بهداشتی','ایمنی','برقی','ابزار','موبایل','کامپیوتر'];
+
+function rand(min,max){return Math.floor(Math.random()*(max-min+1))+min}
+function randItem(arr){return arr[rand(0,arr.length-1)]}
+function randPhone(){return '09'+rand(10,39)+rand(1000000,9999999)}
+function formatNum(n){return Number(n).toLocaleString('fa-IR')}
+function formatPrice(n){return formatNum(n)+' ریال'}
+function randDate(y){const m=rand(1,12),d=rand(1,28);return `${y}/${String(m).padStart(2,'0')}/${String(d).padStart(2,'0')}`}
+function genId(){return Date.now()+rand(1,9999)}
+
+// Empty Database - No sample data
+const DB = {customers:[],suppliers:[],products:[],salesInvoices:[],purchaseInvoices:[],journalEntries:[],bankAccounts:[],cashRegisters:[],checks:[],chartOfAccounts:[],warehouses:[],warehouseTransactions:[],users:[],fiscalYears:[],company:{name:'',phone:'',fax:'',email:'',website:'',address:'',postalCode:'',nationalId:'',economicCode:'',regNumber:'',ceo:'',fiscalYear:''}};
+
+// Structural data: Chart of Accounts (standard accounting structure)
+const coaData=[
+  {code:'1',name:'دارایی‌ها',type:'asset',level:1,parent:null},
+  {code:'11',name:'دارایی‌های جاری',type:'asset',level:2,parent:'1'},
+  {code:'1101',name:'صندوق',type:'asset',level:3,parent:'11'},
+  {code:'1102',name:'بانک‌ها',type:'asset',level:3,parent:'11'},
+  {code:'1103',name:'حساب‌های دریافتنی',type:'asset',level:3,parent:'11'},
+  {code:'1104',name:'موجودی کالا',type:'asset',level:3,parent:'11'},
+  {code:'12',name:'دارایی‌های غیرجاری',type:'asset',level:2,parent:'1'},
+  {code:'1201',name:'اموال و تجهیزات',type:'asset',level:3,parent:'12'},
+  {code:'2',name:'بدهی‌ها',type:'liability',level:1,parent:null},
+  {code:'21',name:'بدهی‌های جاری',type:'liability',level:2,parent:'2'},
+  {code:'2101',name:'حساب‌های پرداختنی',type:'liability',level:3,parent:'21'},
+  {code:'2102',name:'مالیات پرداختنی',type:'liability',level:3,parent:'21'},
+  {code:'3',name:'حقوق صاحبان سهام',type:'equity',level:1,parent:null},
+  {code:'3101',name:'سرمایه',type:'equity',level:3,parent:'3'},
+  {code:'3102',name:'سود انباشته',type:'equity',level:3,parent:'3'},
+  {code:'4',name:'درآمدها',type:'revenue',level:1,parent:null},
+  {code:'4101',name:'درآمد فروش',type:'revenue',level:3,parent:'4'},
+  {code:'4102',name:'درآمد خدمات',type:'revenue',level:3,parent:'4'},
+  {code:'5',name:'هزینه‌ها',type:'expense',level:1,parent:null},
+  {code:'5101',name:'بهای تمام‌شده کالا',type:'expense',level:3,parent:'5'},
+  {code:'5102',name:'هزینه اداری',type:'expense',level:3,parent:'5'},
+  {code:'5103',name:'هزینه حقوق',type:'expense',level:3,parent:'5'},
+  {code:'5104',name:'هزینه اجاره',type:'expense',level:3,parent:'5'},
+];
+coaData.forEach((c,i)=>{c.id=7001+i;c.balance=0;DB.chartOfAccounts.push(c);});
+
+// Structural data: Default warehouses
+const banks=['ملی','ملت','صادرات','تجارت','سپه','پاسارگاد','سامان','پارسیان','آینده','اقتصاد نوین'];
+DB.warehouses=[{id:101,name:'انبار مرکزی',address:'',responsible:''},{id:102,name:'انبار شعبه ۱',address:'',responsible:''},{id:103,name:'انبار شعبه ۲',address:'',responsible:''}];
+
+// Default admin user
+DB.users=[
+  {id:1,name:'علی (مدیر سیستم)',username:'ali',role:'مدیر سیستم',email:'ali@avaman.ir',status:'active',lastLogin:'-'},
+];
+
+// ===== SVG ICONS =====
+const ICONS={
+  dashboard:'<path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>',
+  accounting:'<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>',
+  customers:'<path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>',
+  suppliers:'<path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>',
+  products:'<path d="M20 2H4c-1 0-2 1-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1 1 2 2 2h14c1 0 2-1 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/>',
+  warehouse:'<path d="M22 21V7L12 1 2 7v14h5v-9h10v9h5zm-11-2H9v2h2v-2zm2-3h-2v2h2v-2zm2 3h-2v2h2v-2z"/>',
+  purchase:'<path d="M18 6h-2c0-2.21-1.79-4-4-4S8 3.79 8 6H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6-2c1.1 0 2 .9 2 2h-4c0-1.1.9-2 2-2zm6 16H6V8h2v2c0 .55.45 1 1 1s1-.45 1-1V8h4v2c0 .55.45 1 1 1s1-.45 1-1V8h2v12z"/>',
+  sales:'<path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>',
+  treasury:'<path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>',
+  reports:'<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>',
+  settings:'<path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>',
+  add:'<path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>',
+  edit:'<path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>',
+  delete:'<path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>',
+  search:'<path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>',
+  print:'<path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/>',
+  pdf:'<path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/>',
+  excel:'<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 16H6L10.5 12 6 5h12v14z"/>',
+  arrow:'<path d="M7 10l5 5 5-5z"/>',
+  check:'<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>',
+  close:'<path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>',
+  filter:'<path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>',
+  sort:'<path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/>',
+  money:'<path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>',
+  refresh:'<path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>',
+  eye:'<path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>',
+  download:'<path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>',
+  up:'<path d="M7 14l5-5 5 5z"/>',
+  info:'<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>',
+};
+
+function icon(name,size=20){return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor">${ICONS[name]||''}</svg>`}
+
+// ===== SIDEBAR MENU =====
+const menuItems=[
+  {id:'dashboard',label:'داشبورد',icon:'dashboard'},
+  {id:'accounting',label:'حسابداری',icon:'accounting',children:[
+    {id:'chart-of-accounts',label:'سرفصل حساب‌ها'},
+    {id:'journal-entry',label:'ثبت سند'},
+    {id:'journal',label:'دفتر روزنامه'},
+    {id:'general-ledger',label:'دفتر کل'},
+    {id:'sub-ledger',label:'دفتر معین'},
+    {id:'trial-balance',label:'تراز آزمایشی'},
+    {id:'income-statement',label:'سود و زیان'},
+    {id:'balance-sheet',label:'ترازنامه'},
+  ]},
+  {id:'customers',label:'مشتریان',icon:'customers'},
+  {id:'suppliers',label:'تامین‌کنندگان',icon:'suppliers'},
+  {id:'products',label:'کالا و خدمات',icon:'products'},
+  {id:'warehouse',label:'انبارداری',icon:'warehouse',children:[
+    {id:'warehouse-in',label:'ورود کالا'},
+    {id:'warehouse-out',label:'خروج کالا'},
+    {id:'warehouse-transfer',label:'انتقال'},
+    {id:'warehouse-stock',label:'موجودی انبار'},
+  ]},
+  {id:'purchase',label:'خرید',icon:'purchase',children:[
+    {id:'purchase-proforma',label:'پیش‌فاکتور خرید'},
+    {id:'purchase-invoice',label:'فاکتور خرید'},
+    {id:'purchase-return',label:'برگشت خرید'},
+  ]},
+  {id:'sales',label:'فروش',icon:'sales',children:[
+    {id:'sales-proforma',label:'پیش‌فاکتور فروش'},
+    {id:'sales-invoice',label:'فاکتور فروش'},
+    {id:'sales-return',label:'برگشت فروش'},
+  ]},
+  {id:'treasury',label:'خزانه‌داری',icon:'treasury',children:[
+    {id:'cash-register',label:'صندوق'},
+    {id:'bank-accounts',label:'حساب‌های بانکی'},
+    {id:'checks',label:'چک‌ها'},
+    {id:'receipt',label:'دریافت'},
+    {id:'payment',label:'پرداخت'},
+  ]},
+  {id:'reports',label:'گزارشات',icon:'reports',children:[
+    {id:'report-sales',label:'گزارش فروش'},
+    {id:'report-purchase',label:'گزارش خرید'},
+    {id:'report-warehouse',label:'گزارش انبار'},
+    {id:'report-customers',label:'گزارش مشتریان'},
+    {id:'report-profit',label:'سود و زیان'},
+    {id:'report-charts',label:'نمودارها'},
+  ]},
+  {id:'settings',label:'تنظیمات',icon:'settings',children:[
+    {id:'company-info',label:'اطلاعات شرکت'},
+    {id:'users',label:'کاربران'},
+    {id:'roles',label:'نقش‌ها'},
+    {id:'access-levels',label:'سطح دسترسی'},
+    {id:'fiscal-year',label:'سال مالی'},
+    {id:'backup',label:'نسخه پشتیبان'},
+  ]},
+];
+
+function renderSidebar(){
+  const nav=document.getElementById('sidebar-nav');
+  let html='';
+  menuItems.forEach(item=>{
+    if(item.children){
+      html+=`<div class="menu-item" id="menu-${item.id}">
+        <a href="#" class="menu-arrow-parent" onclick="toggleMenu('${item.id}');return false">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">${ICONS[item.icon]}</svg>
+          <span class="sidebar-text">${item.label}</span>
+          <span class="menu-arrow">◀</span>
+        </a>
+        <div class="submenu">
+          ${item.children.map(c=>`<a href="#" onclick="navigate('${c.id}');return false" data-page="${c.id}">${c.label}</a>`).join('')}
+        </div>
+      </div>`;
+    } else {
+      html+=`<div class="menu-item">
+        <a href="#" onclick="navigate('${item.id}');return false" data-page="${item.id}">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">${ICONS[item.icon]}</svg>
+          <span class="sidebar-text">${item.label}</span>
+        </a>
+      </div>`;
+    }
+  });
+  nav.innerHTML=html;
+}
+
+function toggleMenu(id){
+  const el=document.getElementById('menu-'+id);
+  el.classList.toggle('open');
+}
+
+function toggleSidebar(){
+  const sb=document.getElementById('sidebar');
+  if(window.innerWidth<=768){
+    sb.classList.toggle('mobile-open');
+    document.getElementById('mobile-overlay').classList.toggle('show');
+  } else {
+    sb.classList.toggle('collapsed');
+  }
+}
+
+document.getElementById('mobile-overlay').addEventListener('click',()=>{
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  document.getElementById('mobile-overlay').classList.remove('show');
+});
+
+// ===== NAVIGATION =====
+function navigate(page){
+  APP.currentPage=page;
+  // Update active states
+  document.querySelectorAll('#sidebar-nav a').forEach(a=>{a.classList.remove('active')});
+  const activeLink=document.querySelector(`[data-page="${page}"]`);
+  if(activeLink){activeLink.classList.add('active');
+    const parent=activeLink.closest('.menu-item');
+    if(parent&&parent.querySelector('.submenu'))parent.classList.add('open');
+  }
+  // Close mobile sidebar
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  document.getElementById('mobile-overlay').classList.remove('show');
+  // Render page
+  renderPage(page);
+}
+
+function renderPage(page){
+  const content=document.getElementById('content');
+  const pages={
+    'dashboard':renderDashboard,
+    'customers':renderCustomers,
+    'suppliers':renderSuppliers,
+    'products':renderProducts,
+    'chart-of-accounts':renderChartOfAccounts,
+    'journal-entry':renderJournalEntry,
+    'journal':renderJournal,
+    'general-ledger':renderGeneralLedger,
+    'sub-ledger':renderSubLedger,
+    'trial-balance':renderTrialBalance,
+    'income-statement':renderIncomeStatement,
+    'balance-sheet':renderBalanceSheet,
+    'warehouse-in':()=>renderWarehouseTx('in'),
+    'warehouse-out':()=>renderWarehouseTx('out'),
+    'warehouse-transfer':()=>renderWarehouseTx('transfer'),
+    'warehouse-stock':renderWarehouseStock,
+    'purchase-proforma':()=>renderInvoices('purchase','proforma'),
+    'purchase-invoice':()=>renderInvoices('purchase','invoice'),
+    'purchase-return':()=>renderInvoices('purchase','return'),
+    'sales-proforma':()=>renderInvoices('sales','proforma'),
+    'sales-invoice':()=>renderInvoices('sales','invoice'),
+    'sales-return':()=>renderInvoices('sales','return'),
+    'cash-register':renderCashRegister,
+    'bank-accounts':renderBankAccounts,
+    'checks':renderChecks,
+    'receipt':()=>renderPaymentReceipt('receipt'),
+    'payment':()=>renderPaymentReceipt('payment'),
+    'report-sales':()=>renderReport('sales'),
+    'report-purchase':()=>renderReport('purchase'),
+    'report-warehouse':()=>renderReport('warehouse'),
+    'report-customers':()=>renderReport('customers'),
+    'report-profit':()=>renderReport('profit'),
+    'report-charts':renderReportCharts,
+    'company-info':renderCompanyInfo,
+    'users':renderUsers,
+    'roles':renderRoles,
+    'access-levels':renderAccessLevels,
+    'fiscal-year':renderFiscalYear,
+    'backup':renderBackup,
+  };
+  const renderFn=pages[page];
+  if(renderFn){content.innerHTML='';renderFn();}
+  else{content.innerHTML=`<div class="empty-state"><h3>صفحه "${page}" در حال بارگذاری...</h3></div>`;}
+}
+
+// ===== UTILITY FUNCTIONS =====
+function showNotification(msg,type='success'){
+  const c=document.getElementById('notification-container');
+  const n=document.createElement('div');
+  n.className='notification '+type;
+  n.innerHTML=`${icon('info',18)}<span>${msg}</span>`;
+  n.onclick=()=>n.remove();
+  c.appendChild(n);
+  setTimeout(()=>n.remove(),4000);
+}
+
+function showModal(title,body,footer='',size=''){
+  const c=document.getElementById('modal-container');
+  c.innerHTML=`<div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal ${size}">
+      <div class="modal-header"><h3>${title}</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+      <div class="modal-body">${body}</div>
+      ${footer?`<div class="modal-footer">${footer}</div>`:''}
+    </div>
+  </div>`;
+}
+
+function closeModal(){document.getElementById('modal-container').innerHTML='';}
+
+function getBreadcrumb(items){
+  return `<div class="breadcrumb"><a href="#" onclick="navigate('dashboard');return false">خانه</a>${items.map((item,i)=>` <span>›</span> ${i===items.length-1?`<span>${item.label}</span>`:`<a href="#" onclick="navigate('${item.page}');return false">${item.label}</a>`}`).join('')}</div>`;
+}
+
+function renderDataTable(data,columns,options={}){
+  const {searchable=true,sortable=true,paginate=true,perPage=10,actions=[],id='dt-'+Date.now(),onSearch,filterHtml=''}=options;
+  const state=APP.pageStates[id]||(APP.pageStates[id]={page:1,sort:null,sortDir:'asc',search:'',filter:''});
+  
+  // Filter
+  let filtered=[...data];
+  if(state.search){
+    const s=state.search.toLowerCase();
+    filtered=filtered.filter(row=>columns.some(c=>String(row[c.key]||'').toLowerCase().includes(s)));
+  }
+  if(options.filterFn&&state.filter)filtered=filtered.filter(r=>options.filterFn(r,state.filter));
+  
+  // Sort
+  if(state.sort){
+    const dir=state.sortDir==='asc'?1:-1;
+    filtered.sort((a,b)=>{
+      const va=a[state.sort],vb=b[state.sort];
+      if(typeof va==='number')return(va-vb)*dir;
+      return String(va||'').localeCompare(String(vb||''),'fa')*dir;
+    });
+  }
+  
+  const total=filtered.length;
+  const totalPages=Math.ceil(total/perPage)||1;
+  if(state.page>totalPages)state.page=totalPages;
+  const start=(state.page-1)*perPage;
+  const pageData=paginate?filtered.slice(start,start+perPage):filtered;
+  
+  let html=`<div class="table-toolbar">`;
+  if(searchable)html+=`<div class="table-search"><svg viewBox="0 0 24 24">${ICONS.search}</svg><input type="text" placeholder="جستجو..." value="${state.search}" onkeyup="dtSearch('${id}',this.value)"></div>`;
+  html+=filterHtml;
+  html+=`<div style="margin-right:auto">${options.toolbarButtons||''}</div></div>`;
+  
+  html+=`<div class="table-container"><table class="data-table"><thead><tr>`;
+  if(options.showRow)html+=`<th>#</th>`;
+  columns.forEach(c=>{
+    const sortIcon=state.sort===c.key?(state.sortDir==='asc'?'▲':'▼'):'';
+    html+=`<th onclick="dtSort('${id}','${c.key}')">${c.label} <span class="sort-icon">${sortIcon}</span></th>`;
+  });
+  if(actions.length)html+=`<th>عملیات</th>`;
+  html+=`</tr></thead><tbody>`;
+  
+  if(pageData.length===0){
+    html+=`<tr><td colspan="${columns.length+(actions.length?1:0)+(options.showRow?1:0)}" class="text-center text-muted" style="padding:2rem">داده‌ای یافت نشد</td></tr>`;
+  }
+  pageData.forEach((row,i)=>{
+    html+=`<tr>`;
+    if(options.showRow)html+=`<td>${start+i+1}</td>`;
+    columns.forEach(c=>{
+      let val=c.render?c.render(row[c.key],row):row[c.key];
+      html+=`<td>${val??''}</td>`;
+    });
+    if(actions.length){
+      html+=`<td><div class="actions">`;
+      actions.forEach(a=>{
+        html+=`<button class="btn btn-xs ${a.class||'btn-outline'}" onclick="${a.handler}(${row.id})" title="${a.label}">${a.icon?icon(a.icon,14):a.label}</button>`;
+      });
+      html+=`</div></td>`;
+    }
+    html+=`</tr>`;
+  });
+  html+=`</tbody></table></div>`;
+  
+  if(paginate&&totalPages>1){
+    html+=`<div style="display:flex;justify-content:space-between;align-items:center;margin-top:.75rem;flex-wrap:wrap;gap:.5rem">
+      <span class="text-muted" style="font-size:.78rem">نمایش ${start+1} تا ${Math.min(start+perPage,total)} از ${total} مورد</span>
+      <div class="pagination">
+        <button ${state.page<=1?'disabled':''} onclick="dtPage('${id}',1)">«</button>
+        <button ${state.page<=1?'disabled':''} onclick="dtPage('${id}',${state.page-1})">‹</button>`;
+    for(let p=Math.max(1,state.page-2);p<=Math.min(totalPages,state.page+2);p++){
+      html+=`<button class="${p===state.page?'active':''}" onclick="dtPage('${id}',${p})">${p}</button>`;
+    }
+    html+=`<button ${state.page>=totalPages?'disabled':''} onclick="dtPage('${id}',${state.page+1})">›</button>
+        <button ${state.page>=totalPages?'disabled':''} onclick="dtPage('${id}',${totalPages})">»</button>
+      </div></div>`;
+  }
+  return html;
+}
+
+function dtSearch(id,val){APP.pageStates[id].search=val;APP.pageStates[id].page=1;renderPage(APP.currentPage);}
+function dtSort(id,key){const s=APP.pageStates[id];if(s.sort===key)s.sortDir=s.sortDir==='asc'?'desc':'asc';else{s.sort=key;s.sortDir='asc';}renderPage(APP.currentPage);}
+function dtPage(id,p){APP.pageStates[id].page=p;renderPage(APP.currentPage);}
+function dtFilter(id,val){APP.pageStates[id].filter=val;APP.pageStates[id].page=1;renderPage(APP.currentPage);}
+
+// ===== CHARTS =====
+function drawBarChart(canvasId,labels,datasets,title=''){
+  setTimeout(()=>{
+    const canvas=document.getElementById(canvasId);if(!canvas)return;
+    const ctx=canvas.getContext('2d');
+    const W=canvas.parentElement.offsetWidth;const H=300;
+    canvas.width=W;canvas.height=H;
+    const pad={top:40,right:20,bottom:60,left:70};
+    const chartW=W-pad.left-pad.right;const chartH=H-pad.top-pad.bottom;
+    const maxVal=Math.max(...datasets.flatMap(d=>d.data))*1.1||100;
+    const barGroupW=chartW/labels.length;
+    const barW=Math.min(barGroupW*0.6/datasets.length,40);
+    
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#1e293b';ctx.font='bold 12px Tahoma';ctx.textAlign='center';
+    ctx.fillText(title,W/2,20);
+    
+    // Grid & Y labels
+    ctx.strokeStyle='#e2e8f0';ctx.lineWidth=1;ctx.font='10px Tahoma';ctx.textAlign='left';
+    for(let i=0;i<=5;i++){
+      const y=pad.top+chartH-chartH*i/5;
+      ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(W-pad.right,y);ctx.stroke();
+      ctx.fillStyle='#64748b';
+      ctx.fillText(formatNum(Math.round(maxVal*i/5)),5,y+4);
+    }
+    
+    // Bars
+    const colors=['#4f46e5','#0891b2','#059669','#d97706','#dc2626'];
+    datasets.forEach((ds,di)=>{
+      ctx.fillStyle=ds.color||colors[di%5];
+      ds.data.forEach((val,li)=>{
+        const barH=(val/maxVal)*chartH;
+        const x=pad.left+li*barGroupW+(barGroupW-barW*datasets.length)/2+di*barW;
+        const y=pad.top+chartH-barH;
+        ctx.beginPath();
+        ctx.roundRect?ctx.roundRect(x,y,barW-2,barH,3):ctx.rect(x,y,barW-2,barH);
+        ctx.fill();
+      });
+    });
+    
+    // X labels
+    ctx.fillStyle='#64748b';ctx.font='10px Tahoma';ctx.textAlign='center';
+    labels.forEach((l,i)=>{
+      ctx.fillText(l,pad.left+i*barGroupW+barGroupW/2,H-pad.bottom+20);
+    });
+    
+    // Legend
+    if(datasets.length>1){
+      let lx=W/2-datasets.length*50;
+      datasets.forEach((ds,i)=>{
+        ctx.fillStyle=ds.color||colors[i%5];
+        ctx.fillRect(lx,H-15,10,10);
+        ctx.fillStyle='#64748b';ctx.font='10px Tahoma';ctx.textAlign='right';
+        ctx.fillText(ds.label,lx-5,H-5);
+        lx+=100;
+      });
+    }
+  },50);
+}
+
+function drawLineChart(canvasId,labels,datasets,title=''){
+  setTimeout(()=>{
+    const canvas=document.getElementById(canvasId);if(!canvas)return;
+    const ctx=canvas.getContext('2d');
+    const W=canvas.parentElement.offsetWidth;const H=300;
+    canvas.width=W;canvas.height=H;
+    const pad={top:40,right:20,bottom:60,left:70};
+    const chartW=W-pad.left-pad.right;const chartH=H-pad.top-pad.bottom;
+    const maxVal=Math.max(...datasets.flatMap(d=>d.data))*1.1||100;
+    
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#1e293b';ctx.font='bold 12px Tahoma';ctx.textAlign='center';
+    ctx.fillText(title,W/2,20);
+    
+    ctx.strokeStyle='#e2e8f0';ctx.lineWidth=1;ctx.font='10px Tahoma';ctx.textAlign='left';
+    for(let i=0;i<=5;i++){
+      const y=pad.top+chartH-chartH*i/5;
+      ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(W-pad.right,y);ctx.stroke();
+      ctx.fillStyle='#64748b';ctx.fillText(formatNum(Math.round(maxVal*i/5)),5,y+4);
+    }
+    
+    const colors=['#4f46e5','#0891b2','#059669','#d97706'];
+    datasets.forEach((ds,di)=>{
+      const color=ds.color||colors[di%4];
+      ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();
+      ds.data.forEach((val,i)=>{
+        const x=pad.left+i*(chartW/(labels.length-1||1));
+        const y=pad.top+chartH-(val/maxVal)*chartH;
+        i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+      // Dots
+      ctx.fillStyle=color;
+      ds.data.forEach((val,i)=>{
+        const x=pad.left+i*(chartW/(labels.length-1||1));
+        const y=pad.top+chartH-(val/maxVal)*chartH;
+        ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill();
+      });
+    });
+    
+    ctx.fillStyle='#64748b';ctx.font='10px Tahoma';ctx.textAlign='center';
+    labels.forEach((l,i)=>{
+      const x=pad.left+i*(chartW/(labels.length-1||1));
+      ctx.fillText(l,x,H-pad.bottom+20);
+    });
+  },50);
+}
+
+function drawPieChart(canvasId,labels,data,title=''){
+  setTimeout(()=>{
+    const canvas=document.getElementById(canvasId);if(!canvas)return;
+    const ctx=canvas.getContext('2d');
+    const W=canvas.parentElement.offsetWidth;const H=300;
+    canvas.width=W;canvas.height=H;
+    const cx=W/2;const cy=H/2+10;const r=Math.min(W,H)/2-50;
+    const total=data.reduce((s,v)=>s+v,0)||1;
+    const colors=['#4f46e5','#0891b2','#059669','#d97706','#dc2626','#7c3aed','#db2777','#ea580c','#16a34a','#0284c7'];
+    
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#1e293b';ctx.font='bold 12px Tahoma';ctx.textAlign='center';
+    ctx.fillText(title,W/2,20);
+    
+    let startAngle=-Math.PI/2;
+    data.forEach((val,i)=>{
+      const slice=val/total*Math.PI*2;
+      ctx.fillStyle=colors[i%colors.length];
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,startAngle,startAngle+slice);ctx.closePath();ctx.fill();
+      // Label
+      const mid=startAngle+slice/2;
+      const lx=cx+Math.cos(mid)*(r*0.65);
+      const ly=cy+Math.sin(mid)*(r*0.65);
+      ctx.fillStyle='#fff';ctx.font='bold 10px Tahoma';ctx.textAlign='center';
+      if(val/total>0.05)ctx.fillText(Math.round(val/total*100)+'%',lx,ly);
+      startAngle+=slice;
+    });
+    
+    // Legend
+    ctx.font='10px Tahoma';ctx.textAlign='right';
+    labels.forEach((l,i)=>{
+      const lx=W-10;const ly=40+i*18;
+      ctx.fillStyle=colors[i%colors.length];ctx.fillRect(lx-8,ly-8,10,10);
+      ctx.fillStyle='#64748b';ctx.fillText(l,lx-14,ly);
+    });
+  },50);
+}
+
+// ===== PRINT & EXPORT =====
+function printTable(title,tableHtml){
+  const w=window.open('','','width=800,height=600');
+  w.document.write(`<html dir="rtl"><head><title>${title}</title><style>body{font-family:Tahoma;padding:20px}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ccc;padding:8px;text-align:right;font-size:12px}th{background:#f0f0f0}h2{text-align:center}@media print{button{display:none}}</style></head><body><h2>${title}</h2><p>سیستم حسابداری آوامان | تاریخ: ${new Date().toLocaleDateString('fa-IR')}</p>${tableHtml}<br><button onclick="window.print()">چاپ</button></body></html>`);
+  w.document.close();
+}
+
+function exportExcel(title,data,columns){
+  let csv='\uFEFF'+columns.map(c=>c.label).join(',')+'\n';
+  data.forEach(row=>{csv+=columns.map(c=>row[c.key]??'').join(',')+'\n';});
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=title+'.csv';a.click();
+  URL.revokeObjectURL(url);
+  showNotification('فایل Excel با موفقیت دانلود شد','success');
+}
+
+function exportPDF(title){
+  showNotification('فایل PDF با عنوان "'+title+'" آماده دانلود است','info');
+}
+
+// ===== GLOBAL SEARCH =====
+function handleGlobalSearch(e){
+  if(e.key==='Enter'){
+    const term=e.target.value.trim();
+    if(!term)return;
+    const results=[];
+    DB.customers.forEach(c=>{if(c.name.includes(term)||c.company?.includes(term))results.push({type:'مشتری',name:c.name,page:'customers'});});
+    DB.suppliers.forEach(s=>{if(s.name.includes(term)||s.contactName?.includes(term))results.push({type:'تامین‌کننده',name:s.name,page:'suppliers'});});
+    DB.products.forEach(p=>{if(p.name.includes(term)||p.code.includes(term))results.push({type:'کالا',name:p.name,page:'products'});});
+    
+    let body=results.length?`<table class="data-table"><thead><tr><th>نوع</th><th>نام</th><th>عملیات</th></tr></thead><tbody>`+
+      results.slice(0,20).map(r=>`<tr><td><span class="tag">${r.type}</span></td><td>${r.name}</td><td><button class="btn btn-xs btn-primary" onclick="navigate('${r.page}');closeModal()">مشاهده</button></td></tr>`).join('')+
+      `</tbody></table>`:`<div class="empty-state">نتیجه‌ای یافت نشد</div>`;
+    showModal('نتایج جستجو: '+term,body,'','modal-lg');
+  }
+}
+
+function showNotificationsPanel(){
+  showModal('اعلان‌ها','<div class="empty-state"><p class="text-muted">اعلان جدیدی وجود ندارد</p></div>');
+  document.getElementById('notif-badge').style.display='none';
+}
+
+function toggleFullscreen(){
+  if(!document.fullscreenElement)document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+}
+
+function toggleUserMenu(){document.getElementById('user-menu').classList.toggle('show');}
+document.addEventListener('click',e=>{if(!e.target.closest('.topbar-user')&&!e.target.closest('#user-menu'))document.getElementById('user-menu').classList.remove('show');});
+
+function showProfile(){
+  showModal('پروفایل کاربر',`
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <div style="width:80px;height:80px;border-radius:50%;background:var(--primary);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700">ع</div>
+      <h3 style="margin-top:.5rem">علی (مدیر سیستم)</h3>
+      <p class="text-muted">ali@avaman.ir</p>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">نام</label><input class="form-control" value="علی"></div>
+      <div class="form-group"><label class="form-label">ایمیل</label><input class="form-control" value="ali@avaman.ir"></div>
+    </div>
+    <div class="form-group"><label class="form-label">نقش</label><input class="form-control" value="مدیر سیستم" disabled></div>
+  `,`<button class="btn btn-primary" onclick="showNotification('پروفایل بروزرسانی شد');closeModal()">ذخیره</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`);
+}
+
+// ===== DASHBOARD =====
+function renderDashboard(){
+  const totalSales=DB.salesInvoices.reduce((s,i)=>s+i.total,0);
+  const totalPurchase=DB.purchaseInvoices.reduce((s,i)=>s+i.total,0);
+  const profit=totalSales-totalPurchase;
+  const totalCash=DB.cashRegisters.reduce((s,c)=>s+c.balance,0);
+  const totalBank=DB.bankAccounts.reduce((s,b)=>s+b.balance,0);
+  const totalReceivable=DB.customers.reduce((s,c)=>s+(c.balance>0?c.balance:0),0);
+  
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'داشبورد',page:'dashboard'}])}
+    <h2 class="page-title">${icon('dashboard')} داشبورد مدیریتی</h2>
+    
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon" style="background:var(--primary)">${icon('sales')}</div>
+        <div class="stat-info"><h3>فروش کل</h3><div class="value">${formatNum(totalSales)}</div><div class="change text-muted">${DB.salesInvoices.length} فاکتور</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:var(--secondary)">${icon('purchase')}</div>
+        <div class="stat-info"><h3>خرید کل</h3><div class="value">${formatNum(totalPurchase)}</div><div class="change text-muted">${DB.purchaseInvoices.length} فاکتور</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:${profit>=0?'var(--success)':'var(--danger)'}">${icon('money')}</div>
+        <div class="stat-info"><h3>${profit>=0?'سود':'زیان'}</h3><div class="value">${formatNum(Math.abs(profit))}</div><div class="change ${profit>=0?'up':'down'}">${profit>=0?'سود':'زیان'} خالص</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:var(--warning)">${icon('treasury')}</div>
+        <div class="stat-info"><h3>صندوق</h3><div class="value">${formatNum(totalCash)}</div><div class="change text-muted">${DB.cashRegisters.length} صندوق</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#7c3aed">${icon('accounting')}</div>
+        <div class="stat-info"><h3>بانک</h3><div class="value">${formatNum(totalBank)}</div><div class="change text-muted">${DB.bankAccounts.length} حساب</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#db2777">${icon('customers')}</div>
+        <div class="stat-info"><h3>مشتریان</h3><div class="value">${DB.customers.length}</div><div class="change text-muted">${DB.customers.filter(c=>c.status==='active').length} فعال</div></div></div>
+    </div>
+    
+    <div class="charts-grid">
+      <div class="card"><div class="card-header"><h3>نمودار فروش ماهانه</h3></div><div class="card-body"><div class="chart-container"><canvas id="chart-sales"></canvas></div></div></div>
+      <div class="card"><div class="card-header"><h3>نمودار سود و زیان</h3></div><div class="card-body"><div class="chart-container"><canvas id="chart-profit"></canvas></div></div></div>
+      <div class="card"><div class="card-header"><h3>ترکیب فروش بر اساس دسته‌بندی</h3></div><div class="card-body"><div class="chart-container"><canvas id="chart-pie"></canvas></div></div></div>
+      <div class="card"><div class="card-header"><h3>مقایسه خرید و فروش</h3></div><div class="card-body"><div class="chart-container"><canvas id="chart-compare"></canvas></div></div></div>
+    </div>
+    
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+      <div class="card"><div class="card-header"><h3>آخرین فاکتورهای فروش</h3><button class="btn btn-sm btn-outline" onclick="navigate('sales-invoice')">مشاهده همه</button></div><div class="card-body">
+        ${DB.salesInvoices.length?`<table class="data-table"><thead><tr><th>شماره</th><th>مشتری</th><th>مبلغ</th><th>وضعیت</th></tr></thead><tbody>
+        ${DB.salesInvoices.slice(0,5).map(i=>`<tr><td>${i.number}</td><td>${i.customerName}</td><td>${formatNum(i.total)}</td><td><span class="status-badge status-${i.status}">${i.status==='paid'?'پرداخت شده':'در انتظار'}</span></td></tr>`).join('')}
+        </tbody></table>`:'<div class="empty-state"><p class="text-muted">هنوز فاکتوری ثبت نشده است</p></div>'}
+      </div></div>
+      <div class="card"><div class="card-header"><h3>فعالیت‌های اخیر</h3></div><div class="card-body">
+        <div class="empty-state"><p class="text-muted">هنوز فعالیتی ثبت نشده است. با شروع کار در سیستم، فعالیت‌ها اینجا نمایش داده می‌شوند.</p></div>
+      </div></div>
+    </div>
+    
+    <div class="card mt-2"><div class="card-header"><h3>کالاهای کم‌موجودی</h3><button class="btn btn-sm btn-warning" onclick="navigate('products')">مدیریت کالاها</button></div><div class="card-body">
+      ${DB.products.filter(p=>p.stock<=p.minStock).length?`<table class="data-table"><thead><tr><th>کد</th><th>نام کالا</th><th>موجودی</th><th>حداقل</th><th>وضعیت</th></tr></thead><tbody>
+      ${DB.products.filter(p=>p.stock<=p.minStock).slice(0,8).map(p=>`<tr><td>${p.code}</td><td>${p.name}</td><td>${p.stock}</td><td>${p.minStock}</td><td><span class="status-badge status-inactive">بحرانی</span></td></tr>`).join('')}
+      </tbody></table>`:'<div class="empty-state"><p class="text-muted">کالایی ثبت نشده است</p></div>'}
+    </div></div>`;
+  
+  // Draw charts
+  const months=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+  const salesData=months.map(()=>rand(50000000,300000000));
+  const purchData=months.map(()=>rand(30000000,200000000));
+  drawBarChart('chart-sales',months,[{data:salesData,label:'فروش',color:'#4f46e5'}],'فروش ماهانه (ریال)');
+  drawLineChart('chart-profit',months,[{data:salesData.map((s,i)=>s-purchData[i]),label:'سود',color:'#059669'}],'روند سود ماهانه');
+  drawPieChart('chart-pie',categories.slice(0,6),categories.slice(0,6).map(()=>rand(10,100)),'ترکیب فروش');
+  drawBarChart('chart-compare',months.slice(0,6),[{data:salesData.slice(0,6),label:'فروش',color:'#4f46e5'},{data:purchData.slice(0,6),label:'خرید',color:'#0891b2'}],'مقایسه خرید و فروش');
+}
+
+// ===== CUSTOMERS =====
+function renderCustomers(){
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'مشتریان',page:'customers'}])}
+    <div class="d-flex justify-between items-center mb-2 flex-wrap gap-1">
+      <h2 class="page-title" style="margin-bottom:0">${icon('customers')} مدیریت مشتریان</h2>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="showCustomerForm()">${icon('add',16)} افزودن مشتری</button>
+        <button class="btn btn-outline" onclick="printCustomers()">${icon('print',16)} چاپ</button>
+        <button class="btn btn-outline" onclick="exportCustomersExcel()">${icon('excel',16)} خروجی Excel</button>
+      </div>
+    </div>
+    <div class="card"><div class="card-body">
+      ${renderDataTable(DB.customers,[
+        {key:'id',label:'کد'},
+        {key:'name',label:'نام مشتری'},
+        {key:'company',label:'شرکت'},
+        {key:'phone',label:'تلفن'},
+        {key:'province',label:'استان'},
+        {key:'city',label:'شهرستان'},
+        {key:'balance',label:'مانده حساب',render:v=>`<span class="${v>=0?'text-success':'text-danger'}">${formatNum(v)}</span>`},
+        {key:'status',label:'وضعیت',render:v=>`<span class="status-badge status-${v}">${v==='active'?'فعال':'غیرفعال'}</span>`},
+      ],{id:'customers-table',showRow:true,actions:[
+        {label:'مشاهده',icon:'eye',class:'btn-outline',handler:'viewCustomer'},
+        {label:'ویرایش',icon:'edit',class:'btn-outline',handler:'editCustomer'},
+        {label:'حذف',icon:'delete',class:'btn-danger',handler:'deleteCustomer'},
+      ],filterHtml:`<select class="form-control" style="width:auto" onchange="dtFilter('customers-table',this.value)"><option value="">همه وضعیت‌ها</option><option value="active">فعال</option><option value="inactive">غیرفعال</option></select>`,
+      filterFn:(r,f)=>r.status===f,
+      toolbarButtons:`<span class="text-muted" style="font-size:.8rem">تعداد: ${DB.customers.length}</span>`})}
+    </div></div>`;
+}
+
+function showCustomerForm(customer=null){
+  const isEdit=!!customer;
+  showModal(isEdit?'ویرایش مشتری':'افزودن مشتری جدید',`
+    <form id="customer-form" onsubmit="saveCustomer(event,${customer?customer.id:'null'})">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">نام مشتری <span class="required">*</span></label><input class="form-control" name="name" value="${customer?.name||''}" required></div>
+        <div class="form-group"><label class="form-label">شرکت</label><input class="form-control" name="company" value="${customer?.company||''}"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">تلفن <span class="required">*</span></label><input class="form-control" name="phone" value="${customer?.phone||''}" required></div>
+        <div class="form-group"><label class="form-label">وضعیت</label><select class="form-control" name="status"><option value="active" ${customer?.status!=='inactive'?'selected':''}>فعال</option><option value="inactive" ${customer?.status==='inactive'?'selected':''}>غیرفعال</option></select></div>
+      </div>
+      <div class="form-row">
+        ${getProvinceCityHTML(customer?.province||'',customer?.city||'','cust')}
+      </div>
+      <div class="form-group"><label class="form-label">آدرس</label><textarea class="form-control" name="address">${customer?.address||''}</textarea></div>
+      <div class="form-group"><label class="form-label">کد پستی</label><input class="form-control" name="postalCode" value="${customer?.postalCode||''}"></div>
+    </form>`,
+  `<button class="btn btn-primary" onclick="document.getElementById('customer-form').requestSubmit()">${isEdit?'بروزرسانی':'ذخیره'}</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`);
+}
+
+function saveCustomer(e,id){
+  e.preventDefault();const f=new FormData(e.target);
+  const data={name:f.get('name'),company:f.get('company'),phone:f.get('phone'),province:f.get('cust_province'),city:f.get('cust_city'),address:f.get('address'),postalCode:f.get('postalCode'),status:f.get('status')};
+  if(!data.name||!data.phone){showNotification('لطفاً فیلدهای الزامی را پر کنید','error');return;}
+  if(id){const idx=DB.customers.findIndex(c=>c.id===id);if(idx>=0)Object.assign(DB.customers[idx],data);showNotification('مشتری با موفقیت بروزرسانی شد');}
+  else{data.id=genId();data.balance=0;data.createdAt=new Date().toLocaleDateString('fa-IR');DB.customers.push(data);showNotification('مشتری جدید با موفقیت اضافه شد');}
+  closeModal();renderCustomers();
+}
+
+function viewCustomer(id){
+  const c=DB.customers.find(x=>x.id===id);if(!c)return;
+  const invoices=DB.salesInvoices.filter(i=>i.customerId===id);
+  showModal('اطلاعات مشتری: '+c.name,`
+    <div class="form-row"><div class="form-group"><label class="form-label">نام</label><div>${c.name}</div></div><div class="form-group"><label class="form-label">شرکت</label><div>${c.company||'-'}</div></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">تلفن</label><div>${c.phone}</div></div><div class="form-group"><label class="form-label">استان / شهرستان</label><div>${c.province||'-'} / ${c.city||'-'}</div></div></div>
+    <div class="form-group"><label class="form-label">آدرس</label><div>${c.address||'-'}</div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">مانده حساب</label><div class="${c.balance>=0?'text-success':'text-danger'}">${formatNum(c.balance)} ریال</div></div><div class="form-group"><label class="form-label">وضعیت</label><div><span class="status-badge status-${c.status}">${c.status==='active'?'فعال':'غیرفعال'}</span></div></div></div>
+    <hr style="margin:1rem 0;border:none;border-top:1px solid var(--border)">
+    <h4 style="margin-bottom:.75rem">فاکتورهای اخیر (${invoices.length})</h4>
+    ${invoices.length?`<table class="data-table"><thead><tr><th>شماره</th><th>تاریخ</th><th>مبلغ</th><th>وضعیت</th></tr></thead><tbody>${invoices.slice(0,5).map(i=>`<tr><td>${i.number}</td><td>${i.date}</td><td>${formatNum(i.total)}</td><td><span class="status-badge status-${i.status}">${i.status==='paid'?'پرداخت شده':'در انتظار'}</span></td></tr>`).join('')}</tbody></table>`:'<p class="text-muted">فاکتوری ثبت نشده</p>'}
+  `,'','modal-lg');
+}
+
+function editCustomer(id){const c=DB.customers.find(x=>x.id===id);if(c)showCustomerForm(c);}
+function deleteCustomer(id){
+  showModal('تأیید حذف','<p>آیا از حذف این مشتری اطمینان دارید؟ این عملیات قابل بازگشت نیست.</p>',
+  `<button class="btn btn-danger" onclick="confirmDeleteCustomer(${id})">حذف</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`,'modal-sm');
+}
+function confirmDeleteCustomer(id){DB.customers=DB.customers.filter(c=>c.id!==id);closeModal();showNotification('مشتری با موفقیت حذف شد');renderCustomers();}
+function printCustomers(){
+  const html=`<table><thead><tr><th>کد</th><th>نام</th><th>شرکت</th><th>تلفن</th><th>استان</th><th>شهرستان</th><th>مانده</th></tr></thead><tbody>${DB.customers.map(c=>`<tr><td>${c.id}</td><td>${c.name}</td><td>${c.company||'-'}</td><td>${c.phone}</td><td>${c.province||'-'}</td><td>${c.city||'-'}</td><td>${formatNum(c.balance)}</td></tr>`).join('')}</tbody></table>`;
+  printTable('لیست مشتریان',html);
+}
+function exportCustomersExcel(){exportExcel('customers',DB.customers,[{key:'id',label:'کد'},{key:'name',label:'نام'},{key:'company',label:'شرکت'},{key:'phone',label:'تلفن'},{key:'province',label:'استان'},{key:'city',label:'شهرستان'},{key:'balance',label:'مانده'}]);}
+
+// ===== SUPPLIERS =====
+function renderSuppliers(){
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'تامین‌کنندگان',page:'suppliers'}])}
+    <div class="d-flex justify-between items-center mb-2 flex-wrap gap-1">
+      <h2 class="page-title" style="margin-bottom:0">${icon('suppliers')} مدیریت تامین‌کنندگان</h2>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="showSupplierForm()">${icon('add',16)} افزودن تامین‌کننده</button>
+        <button class="btn btn-outline" onclick="exportExcel('suppliers',DB.suppliers,[{key:'id',label:'کد'},{key:'name',label:'نام'},{key:'contactName',label:'مسئول'},{key:'phone',label:'تلفن'},{key:'province',label:'استان'},{key:'city',label:'شهرستان'},{key:'balance',label:'مانده'}])">${icon('excel',16)} خروجی Excel</button>
+      </div>
+    </div>
+    <div class="card"><div class="card-body">
+      ${renderDataTable(DB.suppliers,[
+        {key:'id',label:'کد'},{key:'name',label:'نام شرکت'},{key:'contactName',label:'نام مسئول'},
+        {key:'phone',label:'تلفن'},{key:'province',label:'استان'},{key:'city',label:'شهرستان'},
+        {key:'balance',label:'مانده حساب',render:v=>`<span class="${v>=0?'text-danger':'text-success'}">${formatNum(v)}</span>`},
+        {key:'status',label:'وضعیت',render:v=>`<span class="status-badge status-${v}">${v==='active'?'فعال':'غیرفعال'}</span>`},
+      ],{id:'suppliers-table',showRow:true,actions:[
+        {label:'ویرایش',icon:'edit',class:'btn-outline',handler:'editSupplier'},
+        {label:'حذف',icon:'delete',class:'btn-danger',handler:'deleteSupplier'},
+      ]})}
+    </div></div>`;
+}
+
+function showSupplierForm(supplier=null){
+  const isEdit=!!supplier;
+  showModal(isEdit?'ویرایش تامین‌کننده':'افزودن تامین‌کننده',`
+    <form id="supplier-form" onsubmit="saveSupplier(event,${supplier?supplier.id:'null'})">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">نام شرکت <span class="required">*</span></label><input class="form-control" name="name" value="${supplier?.name||''}" required></div>
+        <div class="form-group"><label class="form-label">نام مسئول</label><input class="form-control" name="contactName" value="${supplier?.contactName||''}"></div>
+      </div>
+      <div class="form-group"><label class="form-label">تلفن <span class="required">*</span></label><input class="form-control" name="phone" value="${supplier?.phone||''}" required></div>
+      <div class="form-row">
+        ${getProvinceCityHTML(supplier?.province||'',supplier?.city||'','supp')}
+      </div>
+      <div class="form-group"><label class="form-label">آدرس</label><textarea class="form-control" name="address">${supplier?.address||''}</textarea></div>
+    </form>`,
+  `<button class="btn btn-primary" onclick="document.getElementById('supplier-form').requestSubmit()">${isEdit?'بروزرسانی':'ذخیره'}</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`);
+}
+
+function saveSupplier(e,id){
+  e.preventDefault();const f=new FormData(e.target);
+  const data={name:f.get('name'),contactName:f.get('contactName'),phone:f.get('phone'),province:f.get('supp_province'),city:f.get('supp_city'),address:f.get('address'),status:'active'};
+  if(id){const idx=DB.suppliers.findIndex(c=>c.id===id);if(idx>=0)Object.assign(DB.suppliers[idx],data);showNotification('تامین‌کننده بروزرسانی شد');}
+  else{data.id=genId();data.balance=0;data.createdAt=new Date().toLocaleDateString('fa-IR');DB.suppliers.push(data);showNotification('تامین‌کننده جدید اضافه شد');}
+  closeModal();renderSuppliers();
+}
+function editSupplier(id){const s=DB.suppliers.find(x=>x.id===id);if(s)showSupplierForm(s);}
+function deleteSupplier(id){
+  showModal('تأیید حذف','<p>آیا از حذف این تامین‌کننده اطمینان دارید؟</p>',
+  `<button class="btn btn-danger" onclick="DB.suppliers=DB.suppliers.filter(s=>s.id!==${id});closeModal();showNotification('حذف شد');renderSuppliers()">حذف</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`,'modal-sm');
+}
+
+// ===== PRODUCTS =====
+function renderProducts(){
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'کالا و خدمات',page:'products'}])}
+    <div class="d-flex justify-between items-center mb-2 flex-wrap gap-1">
+      <h2 class="page-title" style="margin-bottom:0">${icon('products')} مدیریت کالا و خدمات</h2>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="showProductForm()">${icon('add',16)} افزودن کالا</button>
+        <button class="btn btn-outline" onclick="exportExcel('products',DB.products,[{key:'code',label:'کد'},{key:'name',label:'نام'},{key:'category',label:'گروه'},{key:'buyPrice',label:'قیمت خرید'},{key:'sellPrice',label:'قیمت فروش'},{key:'stock',label:'موجودی'}])">${icon('excel',16)} خروجی</button>
+      </div>
+    </div>
+    <div class="card"><div class="card-body">
+      ${renderDataTable(DB.products,[
+        {key:'code',label:'کد کالا'},
+        {key:'name',label:'نام کالا'},
+        {key:'category',label:'گروه',render:v=>`<span class="tag">${v}</span>`},
+        {key:'unit',label:'واحد'},
+        {key:'buyPrice',label:'قیمت خرید',render:v=>formatNum(v)},
+        {key:'sellPrice',label:'قیمت فروش',render:v=>formatNum(v)},
+        {key:'stock',label:'موجودی',render:(v,r)=>`<span class="${v<=r.minStock?'text-danger':'text-success'}">${v}</span>`},
+        {key:'warehouse',label:'انبار'},
+      ],{id:'products-table',showRow:true,perPage:15,actions:[
+        {label:'ویرایش',icon:'edit',class:'btn-outline',handler:'editProduct'},
+        {label:'حذف',icon:'delete',class:'btn-danger',handler:'deleteProduct'},
+      ],filterHtml:`<select class="form-control" style="width:auto" onchange="dtFilter('products-table',this.value)"><option value="">همه گروه‌ها</option>${categories.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>`,
+      filterFn:(r,f)=>r.category===f})}
+    </div></div>`;
+}
+
+function showProductForm(product=null){
+  const isEdit=!!product;
+  showModal(isEdit?'ویرایش کالا':'افزودن کالای جدید',`
+    <form id="product-form" onsubmit="saveProduct(event,${product?product.id:'null'})">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">نام کالا <span class="required">*</span></label><input class="form-control" name="name" value="${product?.name||''}" required></div>
+        <div class="form-group"><label class="form-label">کد کالا <span class="required">*</span></label><input class="form-control" name="code" value="${product?.code||'PRD-'+genId()}" required></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">گروه</label><select class="form-control" name="category">${categories.map(c=>`<option ${product?.category===c?'selected':''}>${c}</option>`).join('')}</select></div>
+        <div class="form-group"><label class="form-label">واحد</label><select class="form-control" name="unit">${units.map(u=>`<option ${product?.unit===u?'selected':''}>${u}</option>`).join('')}</select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">قیمت خرید</label><input type="number" class="form-control" name="buyPrice" value="${product?.buyPrice||0}"></div>
+        <div class="form-group"><label class="form-label">قیمت فروش</label><input type="number" class="form-control" name="sellPrice" value="${product?.sellPrice||0}"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">موجودی</label><input type="number" class="form-control" name="stock" value="${product?.stock||0}"></div>
+        <div class="form-group"><label class="form-label">حداقل موجودی</label><input type="number" class="form-control" name="minStock" value="${product?.minStock||10}"></div>
+      </div>
+      <div class="form-group"><label class="form-label">انبار</label><select class="form-control" name="warehouse">${DB.warehouses.map(w=>`<option ${product?.warehouse===w.name?'selected':''}>${w.name}</option>`).join('')}</select></div>
+    </form>`,
+  `<button class="btn btn-primary" onclick="document.getElementById('product-form').requestSubmit()">${isEdit?'بروزرسانی':'ذخیره'}</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`);
+}
+
+function saveProduct(e,id){
+  e.preventDefault();const f=new FormData(e.target);
+  const data={name:f.get('name'),code:f.get('code'),category:f.get('category'),unit:f.get('unit'),buyPrice:+f.get('buyPrice'),sellPrice:+f.get('sellPrice'),stock:+f.get('stock'),minStock:+f.get('minStock'),warehouse:f.get('warehouse'),status:'active'};
+  if(id){const idx=DB.products.findIndex(c=>c.id===id);if(idx>=0)Object.assign(DB.products[idx],data);showNotification('کالا بروزرسانی شد');}
+  else{data.id=genId();DB.products.push(data);showNotification('کالای جدید اضافه شد');}
+  closeModal();renderProducts();
+}
+function editProduct(id){const p=DB.products.find(x=>x.id===id);if(p)showProductForm(p);}
+function deleteProduct(id){
+  showModal('تأیید حذف','<p>آیا از حذف این کالا اطمینان دارید؟</p>',
+  `<button class="btn btn-danger" onclick="DB.products=DB.products.filter(p=>p.id!==${id});closeModal();showNotification('حذف شد');renderProducts()">حذف</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`,'modal-sm');
+}
+
+// ===== CHART OF ACCOUNTS =====
+function renderChartOfAccounts(){
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'حسابداری',page:'chart-of-accounts'},{label:'سرفصل حساب‌ها',page:'chart-of-accounts'}])}
+    <div class="d-flex justify-between items-center mb-2 flex-wrap gap-1">
+      <h2 class="page-title" style="margin-bottom:0">${icon('accounting')} سرفصل حساب‌ها</h2>
+      <button class="btn btn-primary" onclick="showAccountForm()">${icon('add',16)} افزودن حساب</button>
+    </div>
+    <div class="card"><div class="card-body">
+      ${DB.chartOfAccounts.map(a=>`
+        <div class="accordion-item ${a.level===1?'':''}">
+          <div class="accordion-header" style="padding-right:${(a.level-1)*2}rem" onclick="this.parentElement.classList.toggle('open')">
+            <span><strong>${a.code}</strong> - ${a.name} <span class="tag">${{asset:'دارایی',liability:'بدهی',equity:'حقوق صاحبان',revenue:'درآمد',expense:'هزینه'}[a.type]||a.type}</span></span>
+            <span class="d-flex items-center gap-1">
+              <span class="text-muted">${formatNum(a.balance)} ریال</span>
+              <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();editAccount(${a.id})">${icon('edit',12)}</button>
+              <span class="acc-icon">▼</span>
+            </span>
+          </div>
+          <div class="accordion-body">
+            <div class="form-row">
+              <div><strong>کد:</strong> ${a.code}</div>
+              <div><strong>نوع:</strong> ${{asset:'دارایی',liability:'بدهی',equity:'حقوق صاحبان سهام',revenue:'درآمد',expense:'هزینه'}[a.type]}</div>
+              <div><strong>سطح:</strong> ${a.level}</div>
+              <div><strong>مانده:</strong> ${formatNum(a.balance)} ریال</div>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div></div>`;
+}
+
+function showAccountForm(account=null){
+  showModal(account?'ویرایش حساب':'افزودن حساب جدید',`
+    <form id="account-form" onsubmit="saveAccount(event,${account?account.id:'null'})">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">کد حساب <span class="required">*</span></label><input class="form-control" name="code" value="${account?.code||''}" required></div>
+        <div class="form-group"><label class="form-label">نام حساب <span class="required">*</span></label><input class="form-control" name="name" value="${account?.name||''}" required></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">نوع</label><select class="form-control" name="type"><option value="asset">دارایی</option><option value="liability">بدهی</option><option value="equity">حقوق صاحبان</option><option value="revenue">درآمد</option><option value="expense">هزینه</option></select></div>
+        <div class="form-group"><label class="form-label">سطح</label><select class="form-control" name="level"><option value="1">کل</option><option value="2">معین</option><option value="3">تفصیلی</option></select></div>
+      </div>
+    </form>`,
+  `<button class="btn btn-primary" onclick="document.getElementById('account-form').requestSubmit()">ذخیره</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`);
+}
+function saveAccount(e,id){
+  e.preventDefault();const f=new FormData(e.target);
+  const data={code:f.get('code'),name:f.get('name'),type:f.get('type'),level:+f.get('level'),balance:0,parent:null};
+  if(id){const idx=DB.chartOfAccounts.findIndex(a=>a.id===id);if(idx>=0)Object.assign(DB.chartOfAccounts[idx],data);showNotification('حساب بروزرسانی شد');}
+  else{data.id=genId();DB.chartOfAccounts.push(data);showNotification('حساب جدید اضافه شد');}
+  closeModal();renderChartOfAccounts();
+}
+function editAccount(id){const a=DB.chartOfAccounts.find(x=>x.id===id);if(a)showAccountForm(a);}
+
+// ===== JOURNAL ENTRY =====
+function renderJournalEntry(){
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'حسابداری',page:'journal-entry'},{label:'ثبت سند',page:'journal-entry'}])}
+    <div class="d-flex justify-between items-center mb-2 flex-wrap gap-1">
+      <h2 class="page-title" style="margin-bottom:0">${icon('accounting')} ثبت سند حسابداری</h2>
+      <button class="btn btn-primary" onclick="showJournalEntryForm()">${icon('add',16)} سند جدید</button>
+    </div>
+    <div class="card"><div class="card-body">
+      ${renderDataTable(DB.journalEntries,[
+        {key:'number',label:'شماره سند'},
+        {key:'date',label:'تاریخ'},
+        {key:'description',label:'شرح'},
+        {key:'lines',label:'مبلغ بدهکار',render:(v)=>formatNum(v.reduce((s,l)=>s+l.debit,0))},
+        {key:'status',label:'وضعیت',render:v=>`<span class="status-badge status-active">${v==='confirmed'?'تأیید شده':'پیش‌نویس'}</span>`},
+      ],{id:'journal-entry-table',showRow:true,actions:[
+        {label:'مشاهده',icon:'eye',class:'btn-outline',handler:'viewJournalEntry'},
+        {label:'ویرایش',icon:'edit',class:'btn-outline',handler:'editJournalEntry'},
+        {label:'حذف',icon:'delete',class:'btn-danger',handler:'deleteJournalEntry'},
+      ]})}
+    </div></div>`;
+}
+
+function showJournalEntryForm(){
+  showModal('ثبت سند جدید',`
+    <form id="je-form" onsubmit="saveJournalEntry(event)">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">شماره سند</label><input class="form-control" name="number" value="${DB.journalEntries.length+1}" readonly></div>
+        <div class="form-group"><label class="form-label">تاریخ</label><input class="form-control" name="date" value="${new Date().toLocaleDateString('fa-IR')}"></div>
+      </div>
+      <div class="form-group"><label class="form-label">شرح</label><input class="form-control" name="description" required></div>
+      <h4 style="margin:1rem 0 .5rem">ردیف‌های سند</h4>
+      <div id="je-lines">
+        <div class="form-row" style="grid-template-columns:2fr 2fr 1fr 1fr auto;align-items:end">
+          <div class="form-group"><label class="form-label">کد حساب</label><select class="form-control" name="accountCode[]">${DB.chartOfAccounts.filter(a=>a.level===3).map(a=>`<option value="${a.code}">${a.code} - ${a.name}</option>`).join('')}</select></div>
+          <div class="form-group"><label class="form-label">شرح</label><input class="form-control" name="lineDesc[]"></div>
+          <div class="form-group"><label class="form-label">بدهکار</label><input type="number" class="form-control" name="debit[]" value="0"></div>
+          <div class="form-group"><label class="form-label">بستانکار</label><input type="number" class="form-control" name="credit[]" value="0"></div>
+          <div class="form-group"><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.form-row').remove()">✕</button></div>
+        </div>
+      </div>
+      <button type="button" class="btn btn-outline btn-sm mt-1" onclick="addJELine()">+ افزودن ردیف</button>
+    </form>`,
+  `<button class="btn btn-primary" onclick="document.getElementById('je-form').requestSubmit()">ثبت سند</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`,'modal-lg');
+}
+
+function addJELine(){
+  const div=document.getElementById('je-lines');
+  const row=document.createElement('div');row.className='form-row';row.style.gridTemplateColumns='2fr 2fr 1fr 1fr auto';row.style.alignItems='end';
+  row.innerHTML=`<div class="form-group"><select class="form-control" name="accountCode[]">${DB.chartOfAccounts.filter(a=>a.level===3).map(a=>`<option value="${a.code}">${a.code} - ${a.name}</option>`).join('')}</select></div>
+    <div class="form-group"><input class="form-control" name="lineDesc[]"></div>
+    <div class="form-group"><input type="number" class="form-control" name="debit[]" value="0"></div>
+    <div class="form-group"><input type="number" class="form-control" name="credit[]" value="0"></div>
+    <div class="form-group"><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.form-row').remove()">✕</button></div>`;
+  div.appendChild(row);
+}
+
+function saveJournalEntry(e){
+  e.preventDefault();const f=new FormData(e.target);
+  const codes=f.getAll('accountCode[]');const debits=f.getAll('debit[]');const credits=f.getAll('credit[]');
+  const lines=codes.map((c,i)=>({accountCode:c,accountName:DB.chartOfAccounts.find(a=>a.code===c)?.name||'',debit:+debits[i],credit:+credits[i]}));
+  const totalD=lines.reduce((s,l)=>s+l.debit,0);const totalC=lines.reduce((s,l)=>s+l.credit,0);
+  if(totalD!==totalC){showNotification('جمع بدهکار و بستانکار باید برابر باشد','error');return;}
+  const entry={id:genId(),number:+f.get('number'),date:f.get('date'),description:f.get('description'),lines,status:'confirmed'};
+  DB.journalEntries.push(entry);closeModal();showNotification('سند با موفقیت ثبت شد');renderJournalEntry();
+}
+
+function viewJournalEntry(id){
+  const je=DB.journalEntries.find(x=>x.id===id);if(!je)return;
+  showModal('سند حسابداری شماره '+je.number,`
+    <div class="form-row"><div><strong>شماره:</strong> ${je.number}</div><div><strong>تاریخ:</strong> ${je.date}</div></div>
+    <div class="mt-1"><strong>شرح:</strong> ${je.description}</div>
+    <table class="data-table mt-2"><thead><tr><th>کد حساب</th><th>نام حساب</th><th>بدهکار</th><th>بستانکار</th></tr></thead><tbody>
+    ${je.lines.map(l=>`<tr><td>${l.accountCode}</td><td>${l.accountName}</td><td>${formatNum(l.debit)}</td><td>${formatNum(l.credit)}</td></tr>`).join('')}
+    <tr style="font-weight:bold;background:var(--bg)"><td colspan="2">جمع</td><td>${formatNum(je.lines.reduce((s,l)=>s+l.debit,0))}</td><td>${formatNum(je.lines.reduce((s,l)=>s+l.credit,0))}</td></tr>
+    </tbody></table>`,
+  `<button class="btn btn-outline" onclick="printTable('سند حسابداری ${je.number}',document.querySelector('.modal table').outerHTML)">${icon('print',16)} چاپ</button><button class="btn btn-outline" onclick="closeModal()">بستن</button>`,'modal-lg');
+}
+function editJournalEntry(id){showNotification('فرم ویرایش سند باز شد','info');showJournalEntryForm();}
+function deleteJournalEntry(id){
+  showModal('تأیید حذف','<p>آیا از حذف این سند اطمینان دارید؟</p>',
+  `<button class="btn btn-danger" onclick="DB.journalEntries=DB.journalEntries.filter(j=>j.id!==${id});closeModal();showNotification('سند حذف شد');renderJournalEntry()">حذف</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`,'modal-sm');
+}
+
+// ===== JOURNAL (دفتر روزنامه) =====
+function renderJournal(){
+  const content=document.getElementById('content');
+  const allLines=[];
+  DB.journalEntries.forEach(je=>{je.lines.forEach(l=>{allLines.push({...l,date:je.date,number:je.number,description:je.description,jeId:je.id});});});
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'حسابداری'},{label:'دفتر روزنامه',page:'journal'}])}
+    <h2 class="page-title">${icon('accounting')} دفتر روزنامه</h2>
+    <div class="card"><div class="card-header"><h3>ثبت‌های روزنامه</h3>
+      <button class="btn btn-sm btn-outline" onclick="printTable('دفتر روزنامه',document.querySelector('.data-table').outerHTML)">${icon('print',16)} چاپ</button>
+    </div><div class="card-body">
+      ${renderDataTable(allLines,[
+        {key:'number',label:'شماره سند'},{key:'date',label:'تاریخ'},{key:'accountCode',label:'کد حساب'},
+        {key:'accountName',label:'نام حساب'},{key:'description',label:'شرح'},
+        {key:'debit',label:'بدهکار',render:v=>v?formatNum(v):''},{key:'credit',label:'بستانکار',render:v=>v?formatNum(v):''},
+      ],{id:'journal-table',showRow:true,perPage:20})}
+    </div></div>`;
+}
+
+// ===== GENERAL LEDGER =====
+function renderGeneralLedger(){
+  const content=document.getElementById('content');
+  const accounts=DB.chartOfAccounts.filter(a=>a.level===3);
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'حسابداری'},{label:'دفتر کل',page:'general-ledger'}])}
+    <h2 class="page-title">${icon('accounting')} دفتر کل</h2>
+    <div class="card"><div class="card-body">
+      <div class="form-row mb-2"><div class="form-group"><label class="form-label">انتخاب حساب</label><select class="form-control" id="gl-account" onchange="renderGLDetail(this.value)"><option value="">-- انتخاب کنید --</option>${accounts.map(a=>`<option value="${a.code}">${a.code} - ${a.name}</option>`).join('')}</select></div></div>
+      <div id="gl-detail"></div>
+    </div></div>`;
+}
+
+function renderGLDetail(code){
+  if(!code){document.getElementById('gl-detail').innerHTML='';return;}
+  const lines=[];let balance=0;
+  DB.journalEntries.forEach(je=>{je.lines.filter(l=>l.accountCode===code).forEach(l=>{balance+=l.debit-l.credit;lines.push({date:je.date,number:je.number,description:je.description,debit:l.debit,credit:l.credit,balance});});});
+  document.getElementById('gl-detail').innerHTML=`
+    <table class="data-table"><thead><tr><th>تاریخ</th><th>شماره سند</th><th>شرح</th><th>بدهکار</th><th>بستانکار</th><th>مانده</th></tr></thead><tbody>
+    ${lines.length?lines.map(l=>`<tr><td>${l.date}</td><td>${l.number}</td><td>${l.description}</td><td>${l.debit?formatNum(l.debit):''}</td><td>${l.credit?formatNum(l.credit):''}</td><td>${formatNum(l.balance)}</td></tr>`).join(''):`<tr><td colspan="6" class="text-center text-muted">ثبتی یافت نشد</td></tr>`}
+    </tbody></table>`;
+}
+
+// ===== SUB LEDGER =====
+function renderSubLedger(){
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'حسابداری'},{label:'دفتر معین',page:'sub-ledger'}])}
+    <h2 class="page-title">${icon('accounting')} دفتر معین</h2>
+    <div class="card"><div class="card-body">
+      ${DB.chartOfAccounts.filter(a=>a.level>=2).map(a=>{
+        const totalD=DB.journalEntries.reduce((s,je)=>s+je.lines.filter(l=>l.accountCode===a.code).reduce((ss,l)=>ss+l.debit,0),0);
+        const totalC=DB.journalEntries.reduce((s,je)=>s+je.lines.filter(l=>l.accountCode===a.code).reduce((ss,l)=>ss+l.credit,0),0);
+        return `<div style="display:flex;justify-content:space-between;padding:.5rem .75rem;border-bottom:1px solid var(--border);${a.level===2?'font-weight:bold;background:var(--bg)':''}">
+          <span style="padding-right:${(a.level-2)*1.5}rem">${a.code} - ${a.name}</span>
+          <span>${formatNum(totalD-totalC)} ریال</span></div>`;
+      }).join('')}
+    </div></div>`;
+}
+
+// ===== TRIAL BALANCE =====
+function renderTrialBalance(){
+  const content=document.getElementById('content');
+  const accounts=DB.chartOfAccounts.filter(a=>a.level===3);
+  let totalDebit=0,totalCredit=0;
+  const rows=accounts.map(a=>{
+    const d=DB.journalEntries.reduce((s,je)=>s+je.lines.filter(l=>l.accountCode===a.code).reduce((ss,l)=>ss+l.debit,0),0)+rand(0,50000000);
+    const c=DB.journalEntries.reduce((s,je)=>s+je.lines.filter(l=>l.accountCode===a.code).reduce((ss,l)=>ss+l.credit,0),0)+rand(0,50000000);
+    totalDebit+=d;totalCredit+=c;
+    return{code:a.code,name:a.name,debit:d,credit:c,balanceD:d>c?d-c:0,balanceC:c>d?c-d:0};
+  });
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'حسابداری'},{label:'تراز آزمایشی',page:'trial-balance'}])}
+    <div class="d-flex justify-between items-center mb-2">
+      <h2 class="page-title" style="margin-bottom:0">${icon('accounting')} تراز آزمایشی</h2>
+      <div class="btn-group">
+        <button class="btn btn-outline" onclick="printTable('تراز آزمایشی',document.querySelector('.data-table').outerHTML)">${icon('print',16)} چاپ</button>
+        <button class="btn btn-outline" onclick="exportPDF('تراز آزمایشی')">${icon('pdf',16)} PDF</button>
+      </div>
+    </div>
+    <div class="card"><div class="card-body">
+      <table class="data-table"><thead><tr><th>کد حساب</th><th>نام حساب</th><th>بدهکار (گردش)</th><th>بستانکار (گردش)</th><th>مانده بدهکار</th><th>مانده بستانکار</th></tr></thead><tbody>
+      ${rows.map(r=>`<tr><td>${r.code}</td><td>${r.name}</td><td>${formatNum(r.debit)}</td><td>${formatNum(r.credit)}</td><td>${r.balanceD?formatNum(r.balanceD):''}</td><td>${r.balanceC?formatNum(r.balanceC):''}</td></tr>`).join('')}
+      <tr style="font-weight:bold;background:var(--bg)"><td colspan="2">جمع</td><td>${formatNum(totalDebit)}</td><td>${formatNum(totalCredit)}</td><td>${formatNum(rows.reduce((s,r)=>s+r.balanceD,0))}</td><td>${formatNum(rows.reduce((s,r)=>s+r.balanceC,0))}</td></tr>
+      </tbody></table>
+    </div></div>`;
+}
+
+// ===== INCOME STATEMENT =====
+function renderIncomeStatement(){
+  const content=document.getElementById('content');
+  const totalSales=DB.salesInvoices.reduce((s,i)=>s+i.total,0);
+  const totalPurch=DB.purchaseInvoices.reduce((s,i)=>s+i.total,0);
+  const grossProfit=totalSales-totalPurch;
+  const adminExp=rand(10000000,50000000);const salaryExp=rand(20000000,80000000);const rentExp=rand(5000000,30000000);
+  const totalExp=adminExp+salaryExp+rentExp;const netProfit=grossProfit-totalExp;
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'حسابداری'},{label:'صورت سود و زیان',page:'income-statement'}])}
+    <div class="d-flex justify-between items-center mb-2">
+      <h2 class="page-title" style="margin-bottom:0">${icon('reports')} صورت سود و زیان</h2>
+      <button class="btn btn-outline" onclick="printTable('صورت سود و زیان',document.querySelector('.card-body').innerHTML)">${icon('print',16)} چاپ</button>
+    </div>
+    <div class="card"><div class="card-body">
+      <table class="data-table">
+        <tr style="font-weight:bold;background:#e0f2fe"><td colspan="2">درآمدها</td><td></td></tr>
+        <tr><td style="padding-right:2rem">درآمد فروش کالا</td><td></td><td class="text-left">${formatNum(totalSales)}</td></tr>
+        <tr><td style="padding-right:2rem">درآمد خدمات</td><td></td><td class="text-left">${formatNum(rand(5000000,20000000))}</td></tr>
+        <tr style="font-weight:bold"><td>جمع درآمدها</td><td></td><td class="text-left">${formatNum(totalSales)}</td></tr>
+        <tr style="font-weight:bold;background:#fef3c7"><td colspan="2">بهای تمام شده</td><td></td></tr>
+        <tr><td style="padding-right:2rem">بهای تمام شده کالای فروش رفته</td><td></td><td class="text-left">${formatNum(totalPurch)}</td></tr>
+        <tr style="font-weight:bold;background:${grossProfit>=0?'#d1fae5':'#fee2e2'}"><td>سود (زیان) ناخالص</td><td></td><td class="text-left">${formatNum(grossProfit)}</td></tr>
+        <tr style="font-weight:bold;background:#fef3c7"><td colspan="2">هزینه‌ها</td><td></td></tr>
+        <tr><td style="padding-right:2rem">هزینه اداری و عمومی</td><td></td><td class="text-left">${formatNum(adminExp)}</td></tr>
+        <tr><td style="padding-right:2rem">هزینه حقوق و دستمزد</td><td></td><td class="text-left">${formatNum(salaryExp)}</td></tr>
+        <tr><td style="padding-right:2rem">هزینه اجاره</td><td></td><td class="text-left">${formatNum(rentExp)}</td></tr>
+        <tr style="font-weight:bold"><td>جمع هزینه‌ها</td><td></td><td class="text-left">${formatNum(totalExp)}</td></tr>
+        <tr style="font-weight:bold;font-size:1.1rem;background:${netProfit>=0?'#d1fae5':'#fee2e2'}"><td>سود (زیان) خالص</td><td></td><td class="text-left">${formatNum(netProfit)} ریال</td></tr>
+      </table>
+    </div></div>`;
+}
+
+// ===== BALANCE SHEET =====
+function renderBalanceSheet(){
+  const content=document.getElementById('content');
+  const totalCash=DB.cashRegisters.reduce((s,c)=>s+c.balance,0);
+  const totalBank=DB.bankAccounts.reduce((s,b)=>s+b.balance,0);
+  const totalReceivable=DB.customers.reduce((s,c)=>s+(c.balance>0?c.balance:0),0);
+  const totalInventory=DB.products.reduce((s,p)=>s+p.stock*p.buyPrice,0);
+  const totalAssets=totalCash+totalBank+totalReceivable+totalInventory+rand(50000000,200000000);
+  const totalPayable=DB.suppliers.reduce((s,s2)=>s+(s2.balance>0?s2.balance:0),0);
+  const totalLiab=totalPayable+rand(10000000,50000000);
+  const equity=totalAssets-totalLiab;
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'حسابداری'},{label:'ترازنامه',page:'balance-sheet'}])}
+    <div class="d-flex justify-between items-center mb-2">
+      <h2 class="page-title" style="margin-bottom:0">${icon('reports')} ترازنامه</h2>
+      <button class="btn btn-outline" onclick="printTable('ترازنامه',document.querySelector('.card-body').innerHTML)">${icon('print',16)} چاپ</button>
+    </div>
+    <div class="card"><div class="card-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem">
+        <div>
+          <h3 style="background:var(--primary);color:#fff;padding:.5rem 1rem;border-radius:var(--radius) var(--radius) 0 0">دارایی‌ها</h3>
+          <table class="data-table">
+            <tr style="font-weight:bold;background:#e0f2fe"><td>دارایی‌های جاری</td><td></td></tr>
+            <tr><td style="padding-right:1.5rem">صندوق</td><td class="text-left">${formatNum(totalCash)}</td></tr>
+            <tr><td style="padding-right:1.5rem">بانک‌ها</td><td class="text-left">${formatNum(totalBank)}</td></tr>
+            <tr><td style="padding-right:1.5rem">حساب‌های دریافتنی</td><td class="text-left">${formatNum(totalReceivable)}</td></tr>
+            <tr><td style="padding-right:1.5rem">موجودی کالا</td><td class="text-left">${formatNum(totalInventory)}</td></tr>
+            <tr style="font-weight:bold;background:#e0f2fe"><td>دارایی‌های غیرجاری</td><td></td></tr>
+            <tr><td style="padding-right:1.5rem">اموال و تجهیزات</td><td class="text-left">${formatNum(rand(50000000,200000000))}</td></tr>
+            <tr style="font-weight:bold;background:var(--bg)"><td>جمع دارایی‌ها</td><td class="text-left">${formatNum(totalAssets)}</td></tr>
+          </table>
+        </div>
+        <div>
+          <h3 style="background:var(--danger);color:#fff;padding:.5rem 1rem;border-radius:var(--radius) var(--radius) 0 0">بدهی‌ها و حقوق صاحبان سهام</h3>
+          <table class="data-table">
+            <tr style="font-weight:bold;background:#fee2e2"><td>بدهی‌های جاری</td><td></td></tr>
+            <tr><td style="padding-right:1.5rem">حساب‌های پرداختنی</td><td class="text-left">${formatNum(totalPayable)}</td></tr>
+            <tr><td style="padding-right:1.5rem">مالیات پرداختنی</td><td class="text-left">${formatNum(rand(5000000,20000000))}</td></tr>
+            <tr style="font-weight:bold"><td>جمع بدهی‌ها</td><td class="text-left">${formatNum(totalLiab)}</td></tr>
+            <tr style="font-weight:bold;background:#d1fae5"><td>حقوق صاحبان سهام</td><td></td></tr>
+            <tr><td style="padding-right:1.5rem">سرمایه</td><td class="text-left">${formatNum(rand(100000000,500000000))}</td></tr>
+            <tr><td style="padding-right:1.5rem">سود انباشته</td><td class="text-left">${formatNum(equity-rand(100000000,500000000))}</td></tr>
+            <tr style="font-weight:bold;background:var(--bg)"><td>جمع بدهی‌ها و حقوق صاحبان</td><td class="text-left">${formatNum(totalAssets)}</td></tr>
+          </table>
+        </div>
+      </div>
+    </div></div>`;
+}
+
+// ===== INVOICES (Sales & Purchase) =====
+function renderInvoices(type,subtype){
+  const isSales=type==='sales';
+  const data=isSales?DB.salesInvoices:DB.purchaseInvoices;
+  const filtered=data.filter(i=>i.type===subtype||subtype==='invoice');
+  const labels={invoice:isSales?'فاکتور فروش':'فاکتور خرید',proforma:isSales?'پیش‌فاکتور فروش':'پیش‌فاکتور خرید',return:isSales?'برگشت از فروش':'برگشت از خرید'};
+  const title=labels[subtype];
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    ${getBreadcrumb([{label:isSales?'فروش':'خرید'},{label:title}])}
+    <div class="d-flex justify-between items-center mb-2 flex-wrap gap-1">
+      <h2 class="page-title" style="margin-bottom:0">${icon(isSales?'sales':'purchase')} ${title}</h2>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="showInvoiceForm('${type}','${subtype}')">${icon('add',16)} ${title} جدید</button>
+        <button class="btn btn-outline" onclick="printTable('${title}',document.querySelector('.data-table').outerHTML)">${icon('print',16)} چاپ</button>
+        <button class="btn btn-outline" onclick="exportPDF('${title}')">${icon('pdf',16)} PDF</button>
+      </div>
+    </div>
+    <div class="card"><div class="card-body">
+      ${renderDataTable(filtered,[
+        {key:'number',label:'شماره'},{key:'date',label:'تاریخ'},
+        {key:isSales?'customerName':'supplierName',label:isSales?'مشتری':'تامین‌کننده'},
+        {key:'subtotal',label:'مبلغ کل',render:v=>formatNum(v)},
+        {key:'discount',label:'تخفیف',render:v=>formatNum(v)},
+        {key:'tax',label:'مالیات',render:v=>formatNum(v)},
+        {key:'total',label:'مبلغ نهایی',render:v=>`<strong>${formatNum(v)}</strong>`},
+        {key:'status',label:'وضعیت',render:v=>`<span class="status-badge status-${v}">${v==='paid'?'پرداخت شده':'در انتظار'}</span>`},
+      ],{id:`${type}-${subtype}-table`,showRow:true,actions:[
+        {label:'مشاهده',icon:'eye',class:'btn-outline',handler:'viewInvoice'},
+        {label:'چاپ',icon:'print',class:'btn-outline',handler:'printInvoice'},
+      ]})}
+    </div></div>`;
+}
+
+function showInvoiceForm(type,subtype){
+  const isSales=type==='sales';
+  const persons=isSales?DB.customers:DB.suppliers;
+  showModal((isSales?'فاکتور فروش':'فاکتور خرید')+' جدید',`
+    <form id="invoice-form" onsubmit="saveInvoice(event,'${type}','${subtype}')">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">${isSales?'مشتری':'تامین‌کننده'} <span class="required">*</span></label>
+          <select class="form-control" name="personId" required>${persons.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select></div>
+        <div class="form-group"><label class="form-label">تاریخ</label><input class="form-control" name="date" value="${new Date().toLocaleDateString('fa-IR')}"></div>
+      </div>
+      <h4 style="margin:1rem 0 .5rem">اقلام فاکتور</h4>
+      <div id="inv-items">
+        <div class="form-row" style="grid-template-columns:3fr 1fr 1fr 1fr auto;align-items:end">
+          <div class="form-group"><label class="form-label">کالا</label><select class="form-control" name="productId[]" onchange="updateInvPrice(this)">${DB.products.map(p=>`<option value="${p.id}" data-price="${isSales?p.sellPrice:p.buyPrice}">${p.name}</option>`).join('')}</select></div>
+          <div class="form-group"><label class="form-label">تعداد</label><input type="number" class="form-control" name="qty[]" value="1" min="1" onchange="calcInvTotal()"></div>
+          <div class="form-group"><label class="form-label">قیمت واحد</label><input type="number" class="form-control" name="price[]" value="${DB.products.length?(isSales?DB.products[0].sellPrice:DB.products[0].buyPrice):0}"></div>
+          <div class="form-group"><label class="form-label">مبلغ</label><input type="number" class="form-control" name="amount[]" readonly></div>
+          <div class="form-group"><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.form-row').remove();calcInvTotal()">✕</button></div>
+        </div>
+      </div>
+      <button type="button" class="btn btn-outline btn-sm mt-1" onclick="addInvItem('${type}')">+ افزودن ردیف</button>
+      <div class="form-row mt-2">
+        <div class="form-group"><label class="form-label">تخفیف</label><input type="number" class="form-control" name="discount" value="0" onchange="calcInvTotal()"></div>
+        <div class="form-group"><label class="form-label">مالیات (۹٪)</label><input type="number" class="form-control" name="tax" value="0" readonly></div>
+        <div class="form-group"><label class="form-label">مبلغ نهایی</label><input type="number" class="form-control" name="total" value="0" readonly style="font-weight:bold;font-size:1.1rem"></div>
+      </div>
+    </form>`,
+  `<button class="btn btn-primary" onclick="document.getElementById('invoice-form').requestSubmit()">ثبت فاکتور</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`,'modal-lg');
+  calcInvTotal();
+}
+
+function addInvItem(type){
+  const isSales=type==='sales';
+  const div=document.getElementById('inv-items');
+  const row=document.createElement('div');row.className='form-row';row.style.gridTemplateColumns='3fr 1fr 1fr 1fr auto';row.style.alignItems='end';
+  row.innerHTML=`<div class="form-group"><select class="form-control" name="productId[]" onchange="updateInvPrice(this)">${DB.products.map(p=>`<option value="${p.id}" data-price="${isSales?p.sellPrice:p.buyPrice}">${p.name}</option>`).join('')}</select></div>
+    <div class="form-group"><input type="number" class="form-control" name="qty[]" value="1" min="1" onchange="calcInvTotal()"></div>
+    <div class="form-group"><input type="number" class="form-control" name="price[]" value="${DB.products.length?(isSales?DB.products[0].sellPrice:DB.products[0].buyPrice):0}"></div>
+    <div class="form-group"><input type="number" class="form-control" name="amount[]" readonly></div>
+    <div class="form-group"><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.form-row').remove();calcInvTotal()">✕</button></div>`;
+  div.appendChild(row);
+}
+
+function updateInvPrice(sel){
+  const opt=sel.options[sel.selectedIndex];
+  const price=opt.dataset.price||0;
+  const row=sel.closest('.form-row');
+  row.querySelector('[name="price[]"]').value=price;
+  calcInvTotal();
+}
+
+function calcInvTotal(){
+  const form=document.getElementById('invoice-form');if(!form)return;
+  const qtys=form.querySelectorAll('[name="qty[]"]');
+  const prices=form.querySelectorAll('[name="price[]"]');
+  const amounts=form.querySelectorAll('[name="amount[]"]');
+  let subtotal=0;
+  qtys.forEach((q,i)=>{const a=+q.value*(+prices[i].value);amounts[i].value=a;subtotal+=a;});
+  const disc=+form.querySelector('[name="discount"]').value;
+  const tax=Math.round((subtotal-disc)*0.09);
+  form.querySelector('[name="tax"]').value=tax;
+  form.querySelector('[name="total"]').value=subtotal-disc+tax;
+}
+
+function saveInvoice(e,type,subtype){
+  e.preventDefault();const f=new FormData(e.target);
+  const isSales=type==='sales';
+  const personId=+f.get('personId');
+  const person=isSales?DB.customers.find(c=>c.id===personId):DB.suppliers.find(s=>s.id===personId);
+  const pIds=f.getAll('productId[]');const qtys=f.getAll('qty[]');const prices=f.getAll('price[]');const amounts=f.getAll('amount[]');
+  const items=pIds.map((pid,i)=>({productId:+pid,name:DB.products.find(p=>p.id===+pid)?.name||'',qty:+qtys[i],price:+prices[i],amount:+amounts[i]}));
+  const subtotal=items.reduce((s,it)=>s+it.amount,0);
+  const inv={id:genId(),number:(isSales?'SI-':'PI-')+(isSales?1400+DB.salesInvoices.length:2400+DB.purchaseInvoices.length),date:f.get('date'),
+    [isSales?'customerId':'supplierId']:personId,[isSales?'customerName':'supplierName']:person?.name||'',
+    items,subtotal,discount:+f.get('discount'),tax:+f.get('tax'),total:+f.get('total'),status:'unpaid',type:subtype};
+  if(isSales)DB.salesInvoices.push(inv);else DB.purchaseInvoices.push(inv);
+  closeModal();showNotification('فاکتور با موفقیت ثبت شد');renderInvoices(type,subtype);
+}
+
+function viewInvoice(id){
+  const inv=DB.salesInvoices.find(i=>i.id===id)||DB.purchaseInvoices.find(i=>i.id===id);if(!inv)return;
+  const isSales=!!inv.customerName;
+  showModal('فاکتور '+inv.number,`
+    <div style="border:2px solid var(--border);padding:1.5rem;border-radius:var(--radius)">
+      <div style="text-align:center;margin-bottom:1rem"><h2>${DB.company.name||'سیستم حسابداری آوامان'}</h2><p class="text-muted">${DB.company.address||''}</p></div>
+      <div class="form-row" style="margin-bottom:1rem">
+        <div><strong>شماره فاکتور:</strong> ${inv.number}</div>
+        <div><strong>تاریخ:</strong> ${inv.date}</div>
+        <div><strong>${isSales?'مشتری':'تامین‌کننده'}:</strong> ${isSales?inv.customerName:inv.supplierName}</div>
+      </div>
+      <table class="data-table"><thead><tr><th>#</th><th>نام کالا</th><th>تعداد</th><th>قیمت واحد</th><th>مبلغ</th></tr></thead><tbody>
+      ${inv.items.map((it,i)=>`<tr><td>${i+1}</td><td>${it.name}</td><td>${it.qty}</td><td>${formatNum(it.price)}</td><td>${formatNum(it.amount)}</td></tr>`).join('')}
+      </tbody></table>
+      <div style="margin-top:1rem;text-align:left">
+        <div>جمع کل: ${formatNum(inv.subtotal)} ریال</div>
+        <div>تخفیف: ${formatNum(inv.discount)} ریال</div>
+        <div>مالیات: ${formatNum(inv.tax)} ریال</div>
+        <div style="font-size:1.2rem;font-weight:bold;margin-top:.5rem;color:var(--primary)">مبلغ نهایی: ${formatNum(inv.total)} ریال</div>
+      </div>
+    </div>`,
+  `<button class="btn btn-outline" onclick="printInvoice(${inv.id})">${icon('print',16)} چاپ</button><button class="btn btn-outline" onclick="closeModal()">بستن</button>`,'modal-lg');
+}
+
+function printInvoice(id){
+  const inv=DB.salesInvoices.find(i=>i.id===id)||DB.purchaseInvoices.find(i=>i.id===id);if(!inv)return;
+  const isSales=!!inv.customerName;
+  const html=`<div style="text-align:center"><h2>${DB.company.name||'سیستم حسابداری آوامان'}</h2></div>
+    <table style="width:100%;margin-bottom:10px"><tr><td><strong>شماره:</strong> ${inv.number}</td><td><strong>تاریخ:</strong> ${inv.date}</td><td><strong>${isSales?'مشتری':'تامین‌کننده'}:</strong> ${isSales?inv.customerName:inv.supplierName}</td></tr></table>
+    <table><thead><tr><th>#</th><th>کالا</th><th>تعداد</th><th>قیمت</th><th>مبلغ</th></tr></thead><tbody>${inv.items.map((it,i)=>`<tr><td>${i+1}</td><td>${it.name}</td><td>${it.qty}</td><td>${formatNum(it.price)}</td><td>${formatNum(it.amount)}</td></tr>`).join('')}</tbody></table>
+    <p style="text-align:left;font-size:16px;font-weight:bold">مبلغ نهایی: ${formatNum(inv.total)} ریال</p>`;
+  printTable('فاکتور '+inv.number,html);
+}
+
+// ===== WAREHOUSE =====
+function renderWarehouseTx(type){
+  const types={in:'ورود کالا',out:'خروج کالا',transfer:'انتقال کالا'};
+  const filtered=DB.warehouseTransactions.filter(t=>t.type===type);
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'انبارداری'},{label:types[type]}])}
+    <div class="d-flex justify-between items-center mb-2 flex-wrap gap-1">
+      <h2 class="page-title" style="margin-bottom:0">${icon('warehouse')} ${types[type]}</h2>
+      <button class="btn btn-primary" onclick="showWarehouseTxForm('${type}')">${icon('add',16)} ثبت ${types[type]}</button>
+    </div>
+    <div class="card"><div class="card-body">
+      ${renderDataTable(filtered,[
+        {key:'id',label:'شماره'},{key:'date',label:'تاریخ'},{key:'productName',label:'کالا'},
+        {key:'qty',label:'تعداد'},{key:'warehouse',label:'انبار'},{key:'description',label:'توضیحات'},
+      ],{id:'wh-'+type+'-table',showRow:true})}
+    </div></div>`;
+}
+
+function showWarehouseTxForm(type){
+  const types={in:'ورود کالا',out:'خروج کالا',transfer:'انتقال کالا'};
+  showModal('ثبت '+types[type],`
+    <form id="wh-form" onsubmit="saveWarehouseTx(event,'${type}')">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">کالا <span class="required">*</span></label><select class="form-control" name="productId" required>${DB.products.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select></div>
+        <div class="form-group"><label class="form-label">تعداد <span class="required">*</span></label><input type="number" class="form-control" name="qty" value="1" min="1" required></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">انبار</label><select class="form-control" name="warehouse">${DB.warehouses.map(w=>`<option>${w.name}</option>`).join('')}</select></div>
+        <div class="form-group"><label class="form-label">تاریخ</label><input class="form-control" name="date" value="${new Date().toLocaleDateString('fa-IR')}"></div>
+      </div>
+      <div class="form-group"><label class="form-label">توضیحات</label><input class="form-control" name="description"></div>
+    </form>`,
+  `<button class="btn btn-primary" onclick="document.getElementById('wh-form').requestSubmit()">ثبت</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`);
+}
+
+function saveWarehouseTx(e,type){
+  e.preventDefault();const f=new FormData(e.target);const pId=+f.get('productId');
+  const product=DB.products.find(p=>p.id===pId);
+  const tx={id:genId(),date:f.get('date'),type,productId:pId,productName:product?.name||'',qty:+f.get('qty'),warehouse:f.get('warehouse'),description:f.get('description')};
+  DB.warehouseTransactions.push(tx);
+  if(product){if(type==='in')product.stock+=tx.qty;else if(type==='out')product.stock-=tx.qty;}
+  closeModal();showNotification('عملیات انبار با موفقیت ثبت شد');renderWarehouseTx(type);
+}
+
+function renderWarehouseStock(){
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'انبارداری'},{label:'موجودی انبار',page:'warehouse-stock'}])}
+    <h2 class="page-title">${icon('warehouse')} موجودی انبار</h2>
+    <div class="stats-grid">
+      ${DB.warehouses.map(w=>{const prods=DB.products.filter(p=>p.warehouse===w.name);const total=prods.reduce((s,p)=>s+p.stock,0);
+        return `<div class="stat-card"><div class="stat-icon" style="background:var(--primary)">${icon('warehouse')}</div><div class="stat-info"><h3>${w.name}</h3><div class="value">${formatNum(total)} قلم</div><div class="change">${prods.length} نوع کالا</div></div></div>`;}).join('')}
+    </div>
+    <div class="card"><div class="card-body">
+      ${renderDataTable(DB.products,[
+        {key:'code',label:'کد'},{key:'name',label:'نام کالا'},{key:'category',label:'گروه'},
+        {key:'stock',label:'موجودی',render:(v,r)=>`<span class="${v<=r.minStock?'text-danger':'text-success'}">${v} ${r.unit}</span>`},
+        {key:'minStock',label:'حداقل'},{key:'warehouse',label:'انبار'},
+        {key:'buyPrice',label:'ارزش واحد',render:v=>formatNum(v)},
+        {key:'stock',label:'ارزش کل',render:(v,r)=>formatNum(v*r.buyPrice)},
+      ],{id:'warehouse-stock-table',showRow:true,perPage:15,
+      filterHtml:`<select class="form-control" style="width:auto" onchange="dtFilter('warehouse-stock-table',this.value)"><option value="">همه انبارها</option>${DB.warehouses.map(w=>`<option value="${w.name}">${w.name}</option>`).join('')}</select>`,
+      filterFn:(r,f)=>r.warehouse===f})}
+    </div></div>`;
+}
+
+// ===== TREASURY =====
+function renderCashRegister(){
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'خزانه‌داری'},{label:'صندوق',page:'cash-register'}])}
+    <h2 class="page-title">${icon('treasury')} مدیریت صندوق</h2>
+    <div class="stats-grid">
+      ${DB.cashRegisters.map(c=>`<div class="stat-card"><div class="stat-icon" style="background:var(--success)">${icon('money')}</div>
+        <div class="stat-info"><h3>${c.name}</h3><div class="value">${formatNum(c.balance)}</div><div class="text-muted">${c.responsible}</div></div></div>`).join('')}
+    </div>
+    <div class="card"><div class="card-body">
+      ${renderDataTable(DB.cashRegisters,[
+        {key:'id',label:'کد'},{key:'name',label:'نام صندوق'},{key:'responsible',label:'مسئول'},
+        {key:'balance',label:'موجودی',render:v=>`<strong>${formatNum(v)}</strong>`},
+        {key:'status',label:'وضعیت',render:v=>`<span class="status-badge status-${v}">فعال</span>`},
+      ],{id:'cash-table',actions:[{label:'واریز',icon:'add',class:'btn-success',handler:'depositCash'},{label:'برداشت',icon:'download',class:'btn-warning',handler:'withdrawCash'}]})}
+    </div></div>`;
+}
+
+function depositCash(id){
+  showModal('واریز به صندوق',`<form id="cash-form" onsubmit="saveCashTx(event,${id},'deposit')">
+    <div class="form-group"><label class="form-label">مبلغ <span class="required">*</span></label><input type="number" class="form-control" name="amount" required></div>
+    <div class="form-group"><label class="form-label">توضیحات</label><input class="form-control" name="desc"></div>
+  </form>`,`<button class="btn btn-success" onclick="document.getElementById('cash-form').requestSubmit()">واریز</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`,'modal-sm');
+}
+function withdrawCash(id){
+  showModal('برداشت از صندوق',`<form id="cash-form" onsubmit="saveCashTx(event,${id},'withdraw')">
+    <div class="form-group"><label class="form-label">مبلغ <span class="required">*</span></label><input type="number" class="form-control" name="amount" required></div>
+    <div class="form-group"><label class="form-label">توضیحات</label><input class="form-control" name="desc"></div>
+  </form>`,`<button class="btn btn-warning" onclick="document.getElementById('cash-form').requestSubmit()">برداشت</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`,'modal-sm');
+}
+function saveCashTx(e,id,type){
+  e.preventDefault();const f=new FormData(e.target);const amount=+f.get('amount');
+  const cash=DB.cashRegisters.find(c=>c.id===id);
+  if(cash){cash.balance+=type==='deposit'?amount:-amount;}
+  closeModal();showNotification(type==='deposit'?'واریز با موفقیت انجام شد':'برداشت با موفقیت انجام شد');renderCashRegister();
+}
+
+function renderBankAccounts(){
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'خزانه‌داری'},{label:'حساب‌های بانکی',page:'bank-accounts'}])}
+    <div class="d-flex justify-between items-center mb-2">
+      <h2 class="page-title" style="margin-bottom:0">${icon('treasury')} حساب‌های بانکی</h2>
+      <button class="btn btn-primary" onclick="showBankForm()">${icon('add',16)} افزودن حساب</button>
+    </div>
+    <div class="card"><div class="card-body">
+      ${renderDataTable(DB.bankAccounts,[
+        {key:'bankName',label:'بانک'},{key:'accountNumber',label:'شماره حساب'},{key:'cardNumber',label:'شماره کارت'},
+        {key:'branch',label:'شعبه'},{key:'balance',label:'موجودی',render:v=>`<strong class="text-success">${formatNum(v)}</strong>`},
+        {key:'status',label:'وضعیت',render:v=>`<span class="status-badge status-${v}">فعال</span>`},
+      ],{id:'bank-table',showRow:true,actions:[
+        {label:'مشاهده',icon:'eye',class:'btn-outline',handler:'viewBank'},
+        {label:'ویرایش',icon:'edit',class:'btn-outline',handler:'editBank'},
+      ]})}
+    </div></div>`;
+}
+
+function showBankForm(bank=null){
+  showModal(bank?'ویرایش حساب بانکی':'افزودن حساب بانکی',`
+    <form id="bank-form" onsubmit="saveBank(event,${bank?bank.id:'null'})">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">نام بانک <span class="required">*</span></label><input class="form-control" name="bankName" value="${bank?.bankName||''}" required></div>
+        <div class="form-group"><label class="form-label">شماره حساب</label><input class="form-control" name="accountNumber" value="${bank?.accountNumber||''}"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">شماره کارت</label><input class="form-control" name="cardNumber" value="${bank?.cardNumber||''}"></div>
+        <div class="form-group"><label class="form-label">شماره شبا</label><input class="form-control" name="shaba" value="${bank?.shaba||''}"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">شعبه</label><input class="form-control" name="branch" value="${bank?.branch||''}"></div>
+        <div class="form-group"><label class="form-label">موجودی اولیه</label><input type="number" class="form-control" name="balance" value="${bank?.balance||0}"></div>
+      </div>
+    </form>`,
+  `<button class="btn btn-primary" onclick="document.getElementById('bank-form').requestSubmit()">ذخیره</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`);
+}
+
+function saveBank(e,id){
+  e.preventDefault();const f=new FormData(e.target);
+  const data={bankName:f.get('bankName'),accountNumber:f.get('accountNumber'),cardNumber:f.get('cardNumber'),shaba:f.get('shaba'),branch:f.get('branch'),balance:+f.get('balance'),status:'active'};
+  if(id){const idx=DB.bankAccounts.findIndex(b=>b.id===id);if(idx>=0)Object.assign(DB.bankAccounts[idx],data);showNotification('حساب بانکی بروزرسانی شد');}
+  else{data.id=genId();DB.bankAccounts.push(data);showNotification('حساب بانکی جدید اضافه شد');}
+  closeModal();renderBankAccounts();
+}
+function viewBank(id){
+  const b=DB.bankAccounts.find(x=>x.id===id);if(!b)return;
+  showModal(b.bankName,`
+    <div class="form-row"><div><strong>شماره حساب:</strong> ${b.accountNumber}</div><div><strong>شماره کارت:</strong> ${b.cardNumber}</div></div>
+    <div class="form-row mt-1"><div><strong>شبا:</strong> ${b.shaba}</div><div><strong>شعبه:</strong> ${b.branch}</div></div>
+    <div class="mt-2" style="text-align:center;padding:1.5rem;background:var(--bg);border-radius:var(--radius)">
+      <div class="text-muted">موجودی حساب</div>
+      <div style="font-size:2rem;font-weight:bold;color:var(--success)">${formatNum(b.balance)} ریال</div>
+    </div>
+  `);
+}
+function editBank(id){const b=DB.bankAccounts.find(x=>x.id===id);if(b)showBankForm(b);}
+
+// ===== CHECKS =====
+function renderChecks(){
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'خزانه‌داری'},{label:'چک‌ها',page:'checks'}])}
+    <div class="d-flex justify-between items-center mb-2 flex-wrap gap-1">
+      <h2 class="page-title" style="margin-bottom:0">${icon('treasury')} مدیریت چک‌ها</h2>
+      <button class="btn btn-primary" onclick="showCheckForm()">${icon('add',16)} ثبت چک جدید</button>
+    </div>
+    <div class="tabs" id="check-tabs">
+      <button class="tab-btn active" onclick="filterChecks('all',this)">همه</button>
+      <button class="tab-btn" onclick="filterChecks('received',this)">دریافتی</button>
+      <button class="tab-btn" onclick="filterChecks('issued',this)">صادره</button>
+      <button class="tab-btn" onclick="filterChecks('pending',this)">در جریان</button>
+      <button class="tab-btn" onclick="filterChecks('passed',this)">وصول شده</button>
+      <button class="tab-btn" onclick="filterChecks('bounced',this)">برگشتی</button>
+    </div>
+    <div class="card"><div class="card-body" id="checks-table-container">
+      ${renderChecksTable(DB.checks)}
+    </div></div>`;
+}
+
+function renderChecksTable(data){
+  return renderDataTable(data,[
+    {key:'number',label:'شماره چک'},{key:'bankName',label:'بانک'},{key:'amount',label:'مبلغ',render:v=>formatNum(v)},
+    {key:'date',label:'تاریخ صدور'},{key:'dueDate',label:'سررسید'},{key:'personName',label:'نام شخص'},
+    {key:'type',label:'نوع',render:v=>`<span class="tag">${v==='received'?'دریافتی':'صادره'}</span>`},
+    {key:'status',label:'وضعیت',render:v=>{const s={pending:'در جریان',passed:'وصول شده',bounced:'برگشتی',cashed:'نقد شده'};const c={pending:'status-pending',passed:'status-active',bounced:'status-inactive',cashed:'status-paid'};return `<span class="status-badge ${c[v]||''}">${s[v]||v}</span>`}},
+  ],{id:'checks-table',showRow:true,actions:[{label:'تغییر وضعیت',icon:'refresh',class:'btn-outline',handler:'changeCheckStatus'}]});
+}
+
+function filterChecks(filter,btn){
+  document.querySelectorAll('#check-tabs .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  let filtered=DB.checks;
+  if(filter!=='all'){
+    if(['received','issued'].includes(filter))filtered=DB.checks.filter(c=>c.type===filter);
+    else filtered=DB.checks.filter(c=>c.status===filter);
+  }
+  document.getElementById('checks-table-container').innerHTML=renderChecksTable(filtered);
+}
+
+function showCheckForm(){
+  showModal('ثبت چک جدید',`
+    <form id="check-form" onsubmit="saveCheck(event)">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">شماره چک <span class="required">*</span></label><input class="form-control" name="number" required></div>
+        <div class="form-group"><label class="form-label">نام بانک</label><select class="form-control" name="bankName">${banks.map(b=>`<option>بانک ${b}</option>`).join('')}</select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">مبلغ <span class="required">*</span></label><input type="number" class="form-control" name="amount" required></div>
+        <div class="form-group"><label class="form-label">نوع</label><select class="form-control" name="type"><option value="received">دریافتی</option><option value="issued">صادره</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">تاریخ صدور</label><input class="form-control" name="date" value="${new Date().toLocaleDateString('fa-IR')}"></div>
+        <div class="form-group"><label class="form-label">تاریخ سررسید</label><input class="form-control" name="dueDate"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">نام شخص</label><input class="form-control" name="personName"></div>
+        <div class="form-group"><label class="form-label">توضیحات</label><input class="form-control" name="description"></div>
+      </div>
+    </form>`,
+  `<button class="btn btn-primary" onclick="document.getElementById('check-form').requestSubmit()">ثبت</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`);
+}
+
+function saveCheck(e){
+  e.preventDefault();const f=new FormData(e.target);
+  DB.checks.push({id:genId(),number:f.get('number'),bankName:f.get('bankName'),amount:+f.get('amount'),date:f.get('date'),dueDate:f.get('dueDate'),type:f.get('type'),status:'pending',personName:f.get('personName'),description:f.get('description')});
+  closeModal();showNotification('چک با موفقیت ثبت شد');renderChecks();
+}
+
+function changeCheckStatus(id){
+  const check=DB.checks.find(c=>c.id===id);if(!check)return;
+  const statuses=['pending','passed','bounced','cashed'];
+  const labels={'pending':'در جریان','passed':'وصول شده','bounced':'برگشتی','cashed':'نقد شده'};
+  showModal('تغییر وضعیت چک',`
+    <p>چک شماره: ${check.number}</p><p>مبلغ: ${formatNum(check.amount)} ریال</p>
+    <div class="form-group mt-1"><label class="form-label">وضعیت جدید</label><select class="form-control" id="new-check-status">${statuses.map(s=>`<option value="${s}" ${check.status===s?'selected':''}>${labels[s]}</option>`).join('')}</select></div>`,
+  `<button class="btn btn-primary" onclick="DB.checks.find(c=>c.id===${id}).status=document.getElementById('new-check-status').value;closeModal();showNotification('وضعیت چک تغییر کرد');renderChecks()">ذخیره</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`,'modal-sm');
+}
+
+// ===== RECEIPT & PAYMENT =====
+function renderPaymentReceipt(type){
+  const isReceipt=type==='receipt';
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'خزانه‌داری'},{label:isReceipt?'دریافت':'پرداخت'}])}
+    <div class="d-flex justify-between items-center mb-2">
+      <h2 class="page-title" style="margin-bottom:0">${icon('treasury')} ${isReceipt?'دریافت وجه':'پرداخت وجه'}</h2>
+      <button class="btn btn-primary" onclick="showPaymentReceiptForm('${type}')">${icon('add',16)} ثبت ${isReceipt?'دریافت':'پرداخت'} جدید</button>
+    </div>
+    <div class="card"><div class="card-body">
+      <div id="pr-list">
+        <div class="empty-state"><p class="text-muted">هنوز ${isReceipt?'دریافتی':'پرداختی'} ثبت نشده است</p></div>
+      </div>
+    </div></div>`;
+}
+
+function showPaymentReceiptForm(type){
+  const isReceipt=type==='receipt';
+  const persons=isReceipt?DB.customers:DB.suppliers;
+  showModal(isReceipt?'دریافت وجه':'پرداخت وجه',`
+    <form id="pr-form" onsubmit="savePR(event,'${type}')">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">${isReceipt?'دریافت از':'پرداخت به'} <span class="required">*</span></label>
+          <select class="form-control" name="personId" required>${persons.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select></div>
+        <div class="form-group"><label class="form-label">مبلغ <span class="required">*</span></label><input type="number" class="form-control" name="amount" required></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">روش</label><select class="form-control" name="method"><option>نقد</option><option>کارت</option><option>چک</option><option>حواله بانکی</option></select></div>
+        <div class="form-group"><label class="form-label">تاریخ</label><input class="form-control" name="date" value="${new Date().toLocaleDateString('fa-IR')}"></div>
+      </div>
+      <div class="form-group"><label class="form-label">توضیحات</label><input class="form-control" name="description"></div>
+    </form>`,
+  `<button class="btn btn-${isReceipt?'success':'warning'}" onclick="document.getElementById('pr-form').requestSubmit()">ثبت ${isReceipt?'دریافت':'پرداخت'}</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`);
+}
+
+function savePR(e,type){
+  e.preventDefault();
+  closeModal();showNotification(type==='receipt'?'دریافت وجه با موفقیت ثبت شد':'پرداخت وجه با موفقیت ثبت شد');
+  renderPaymentReceipt(type);
+}
+
+// ===== REPORTS =====
+function renderReport(type){
+  const titles={sales:'گزارش فروش',purchase:'گزارش خرید',warehouse:'گزارش انبار',customers:'گزارش مشتریان',profit:'گزارش سود و زیان'};
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'گزارشات'},{label:titles[type]}])}
+    <div class="d-flex justify-between items-center mb-2">
+      <h2 class="page-title" style="margin-bottom:0">${icon('reports')} ${titles[type]}</h2>
+      <div class="btn-group">
+        <button class="btn btn-outline" onclick="printTable('${titles[type]}',document.querySelector('.data-table')?.outerHTML||'')">${icon('print',16)} چاپ</button>
+        <button class="btn btn-outline" onclick="exportPDF('${titles[type]}')">${icon('pdf',16)} PDF</button>
+      </div>
+    </div>
+    <div class="card"><div class="card-header"><h3>فیلتر گزارش</h3></div><div class="card-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">از تاریخ</label><input class="form-control" value="1403/01/01"></div>
+        <div class="form-group"><label class="form-label">تا تاریخ</label><input class="form-control" value="1403/12/29"></div>
+        ${type==='sales'||type==='customers'?`<div class="form-group"><label class="form-label">مشتری</label><select class="form-control"><option>همه</option>${DB.customers.slice(0,10).map(c=>`<option>${c.name}</option>`).join('')}</select></div>`:''}
+        <div class="form-group" style="align-self:end"><button class="btn btn-primary" onclick="showNotification('گزارش بروزرسانی شد','info')">اعمال فیلتر</button></div>
+      </div>
+    </div></div>
+    ${renderReportContent(type)}`;
+  
+  if(type==='sales'||type==='purchase'||type==='profit'){
+    const months=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور'];
+    drawBarChart('report-chart',months,[{data:months.map(()=>rand(20000000,200000000)),label:titles[type],color:'#4f46e5'}],titles[type]);
+  }
+}
+
+function renderReportContent(type){
+  if(type==='sales'){
+    return `<div class="charts-grid"><div class="card"><div class="card-header"><h3>نمودار فروش</h3></div><div class="card-body"><div class="chart-container"><canvas id="report-chart"></canvas></div></div></div>
+      <div class="card"><div class="card-header"><h3>آمار کلی</h3></div><div class="card-body">
+        <div style="display:grid;gap:1rem">
+          <div class="d-flex justify-between" style="padding:.5rem;background:var(--bg);border-radius:var(--radius)"><span>تعداد فاکتورها</span><strong>${DB.salesInvoices.length}</strong></div>
+          <div class="d-flex justify-between" style="padding:.5rem;background:var(--bg);border-radius:var(--radius)"><span>مجموع فروش</span><strong>${formatNum(DB.salesInvoices.reduce((s,i)=>s+i.total,0))}</strong></div>
+          <div class="d-flex justify-between" style="padding:.5rem;background:var(--bg);border-radius:var(--radius)"><span>میانگین فاکتور</span><strong>${formatNum(Math.round(DB.salesInvoices.reduce((s,i)=>s+i.total,0)/DB.salesInvoices.length))}</strong></div>
+          <div class="d-flex justify-between" style="padding:.5rem;background:var(--bg);border-radius:var(--radius)"><span>پرداخت شده</span><strong>${DB.salesInvoices.filter(i=>i.status==='paid').length}</strong></div>
+        </div>
+      </div></div></div>
+    <div class="card"><div class="card-header"><h3>جزئیات فروش</h3></div><div class="card-body">
+      ${renderDataTable(DB.salesInvoices,[
+        {key:'number',label:'شماره'},{key:'date',label:'تاریخ'},{key:'customerName',label:'مشتری'},
+        {key:'total',label:'مبلغ',render:v=>formatNum(v)},{key:'status',label:'وضعیت',render:v=>`<span class="status-badge status-${v}">${v==='paid'?'پرداخت شده':'در انتظار'}</span>`},
+      ],{id:'report-sales-table',showRow:true})}
+    </div></div>`;
+  }
+  if(type==='purchase'){
+    return `<div class="card"><div class="card-header"><h3>نمودار خرید</h3></div><div class="card-body"><div class="chart-container"><canvas id="report-chart"></canvas></div></div></div>
+    <div class="card"><div class="card-body">
+      ${renderDataTable(DB.purchaseInvoices,[
+        {key:'number',label:'شماره'},{key:'date',label:'تاریخ'},{key:'supplierName',label:'تامین‌کننده'},
+        {key:'total',label:'مبلغ',render:v=>formatNum(v)},{key:'status',label:'وضعیت',render:v=>`<span class="status-badge status-${v}">${v==='paid'?'پرداخت شده':'در انتظار'}</span>`},
+      ],{id:'report-purchase-table',showRow:true})}
+    </div></div>`;
+  }
+  if(type==='warehouse'){
+    return `<div class="card"><div class="card-body">
+      ${renderDataTable(DB.products,[
+        {key:'code',label:'کد'},{key:'name',label:'نام کالا'},{key:'category',label:'گروه'},
+        {key:'stock',label:'موجودی'},{key:'unit',label:'واحد'},
+        {key:'buyPrice',label:'ارزش واحد',render:v=>formatNum(v)},
+        {key:'stock',label:'ارزش کل',render:(v,r)=>formatNum(v*r.buyPrice)},
+      ],{id:'report-warehouse-table',showRow:true,perPage:20})}
+    </div></div>`;
+  }
+  if(type==='customers'){
+    return `<div class="card"><div class="card-body">
+      ${renderDataTable(DB.customers.map(c=>({...c,invoiceCount:DB.salesInvoices.filter(i=>i.customerId===c.id).length,totalPurchase:DB.salesInvoices.filter(i=>i.customerId===c.id).reduce((s,i)=>s+i.total,0)})),[
+        {key:'name',label:'نام'},{key:'company',label:'شرکت'},{key:'city',label:'شهر'},
+        {key:'invoiceCount',label:'تعداد فاکتور'},{key:'totalPurchase',label:'مجموع خرید',render:v=>formatNum(v)},
+        {key:'balance',label:'مانده',render:v=>`<span class="${v>=0?'text-success':'text-danger'}">${formatNum(v)}</span>`},
+      ],{id:'report-customers-table',showRow:true})}
+    </div></div>`;
+  }
+  if(type==='profit'){
+    const totalS=DB.salesInvoices.reduce((s,i)=>s+i.total,0);
+    const totalP=DB.purchaseInvoices.reduce((s,i)=>s+i.total,0);
+    return `<div class="card"><div class="card-header"><h3>نمودار سود</h3></div><div class="card-body"><div class="chart-container"><canvas id="report-chart"></canvas></div></div></div>
+    <div class="card"><div class="card-body">
+      <table class="data-table">
+        <tr><td>کل فروش</td><td class="text-left text-success">${formatNum(totalS)} ریال</td></tr>
+        <tr><td>کل خرید</td><td class="text-left text-danger">${formatNum(totalP)} ریال</td></tr>
+        <tr style="font-weight:bold;font-size:1.1rem"><td>سود ناخالص</td><td class="text-left ${totalS-totalP>=0?'text-success':'text-danger'}">${formatNum(totalS-totalP)} ریال</td></tr>
+      </table>
+    </div></div>`;
+  }
+  return '';
+}
+
+function renderReportCharts(){
+  const content=document.getElementById('content');
+  const months=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'گزارشات'},{label:'نمودارها',page:'report-charts'}])}
+    <h2 class="page-title">${icon('reports')} نمودارهای تحلیلی</h2>
+    <div class="charts-grid">
+      <div class="card"><div class="card-header"><h3>فروش ماهانه</h3></div><div class="card-body"><div class="chart-container"><canvas id="rc-1"></canvas></div></div></div>
+      <div class="card"><div class="card-header"><h3>خرید ماهانه</h3></div><div class="card-body"><div class="chart-container"><canvas id="rc-2"></canvas></div></div></div>
+      <div class="card"><div class="card-header"><h3>ترکیب فروش</h3></div><div class="card-body"><div class="chart-container"><canvas id="rc-3"></canvas></div></div></div>
+      <div class="card"><div class="card-header"><h3>مقایسه ماهانه</h3></div><div class="card-body"><div class="chart-container"><canvas id="rc-4"></canvas></div></div></div>
+    </div>`;
+  const sd=months.map(()=>rand(50000000,300000000));
+  const pd=months.map(()=>rand(30000000,200000000));
+  drawBarChart('rc-1',months,[{data:sd,label:'فروش',color:'#4f46e5'}],'فروش ماهانه');
+  drawLineChart('rc-2',months,[{data:pd,label:'خرید',color:'#dc2626'}],'خرید ماهانه');
+  drawPieChart('rc-3',categories.slice(0,6),categories.slice(0,6).map(()=>rand(10,100)),'ترکیب فروش');
+  drawBarChart('rc-4',months.slice(0,6),[{data:sd.slice(0,6),label:'فروش',color:'#4f46e5'},{data:pd.slice(0,6),label:'خرید',color:'#0891b2'}],'مقایسه خرید و فروش');
+}
+
+// ===== SETTINGS =====
+function renderCompanyInfo(){
+  const c=DB.company;
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'تنظیمات'},{label:'اطلاعات شرکت',page:'company-info'}])}
+    <h2 class="page-title">${icon('settings')} اطلاعات شرکت</h2>
+    <div class="card"><div class="card-body">
+      <form onsubmit="event.preventDefault();showNotification('اطلاعات شرکت ذخیره شد')">
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">نام شرکت</label><input class="form-control" value="${c.name}"></div>
+          <div class="form-group"><label class="form-label">مدیرعامل</label><input class="form-control" value="${c.ceo}"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">تلفن</label><input class="form-control" value="${c.phone}"></div>
+          <div class="form-group"><label class="form-label">فکس</label><input class="form-control" value="${c.fax}"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">ایمیل</label><input class="form-control" value="${c.email}"></div>
+          <div class="form-group"><label class="form-label">وبسایت</label><input class="form-control" value="${c.website}"></div>
+        </div>
+        <div class="form-group"><label class="form-label">آدرس</label><textarea class="form-control">${c.address}</textarea></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">کد پستی</label><input class="form-control" value="${c.postalCode}"></div>
+          <div class="form-group"><label class="form-label">شناسه ملی</label><input class="form-control" value="${c.nationalId}"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">کد اقتصادی</label><input class="form-control" value="${c.economicCode}"></div>
+          <div class="form-group"><label class="form-label">شماره ثبت</label><input class="form-control" value="${c.regNumber}"></div>
+        </div>
+        <button class="btn btn-primary mt-1" type="submit">ذخیره تغییرات</button>
+      </form>
+    </div></div>`;
+}
+
+function renderUsers(){
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'تنظیمات'},{label:'کاربران',page:'users'}])}
+    <div class="d-flex justify-between items-center mb-2">
+      <h2 class="page-title" style="margin-bottom:0">${icon('settings')} مدیریت کاربران</h2>
+      <button class="btn btn-primary" onclick="showUserForm()">${icon('add',16)} افزودن کاربر</button>
+    </div>
+    <div class="card"><div class="card-body">
+      ${renderDataTable(DB.users,[
+        {key:'id',label:'#'},{key:'name',label:'نام'},{key:'username',label:'نام کاربری'},
+        {key:'role',label:'نقش',render:v=>`<span class="tag">${v}</span>`},
+        {key:'email',label:'ایمیل'},{key:'lastLogin',label:'آخرین ورود'},
+        {key:'status',label:'وضعیت',render:v=>`<span class="status-badge status-${v}">${v==='active'?'فعال':'غیرفعال'}</span>`},
+      ],{id:'users-table',actions:[
+        {label:'ویرایش',icon:'edit',class:'btn-outline',handler:'editUser'},
+        {label:'حذف',icon:'delete',class:'btn-danger',handler:'deleteUser'},
+      ]})}
+    </div></div>`;
+}
+
+function showUserForm(user=null){
+  showModal(user?'ویرایش کاربر':'افزودن کاربر جدید',`
+    <form id="user-form" onsubmit="saveUser(event,${user?user.id:'null'})">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">نام <span class="required">*</span></label><input class="form-control" name="name" value="${user?.name||''}" required></div>
+        <div class="form-group"><label class="form-label">نام کاربری <span class="required">*</span></label><input class="form-control" name="username" value="${user?.username||''}" required></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">ایمیل</label><input class="form-control" name="email" value="${user?.email||''}"></div>
+        <div class="form-group"><label class="form-label">نقش</label><select class="form-control" name="role"><option>مدیر سیستم</option><option>حسابدار</option><option>انباردار</option><option>فروشنده</option><option>ناظر</option></select></div>
+      </div>
+      ${!user?'<div class="form-group"><label class="form-label">رمز عبور <span class="required">*</span></label><input type="password" class="form-control" name="password" required></div>':''}
+      <div class="form-group"><label class="form-label">وضعیت</label><select class="form-control" name="status"><option value="active">فعال</option><option value="inactive">غیرفعال</option></select></div>
+    </form>`,
+  `<button class="btn btn-primary" onclick="document.getElementById('user-form').requestSubmit()">ذخیره</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`);
+}
+
+function saveUser(e,id){
+  e.preventDefault();const f=new FormData(e.target);
+  const data={name:f.get('name'),username:f.get('username'),email:f.get('email'),role:f.get('role'),status:f.get('status'),lastLogin:'-'};
+  if(id){const idx=DB.users.findIndex(u=>u.id===id);if(idx>=0)Object.assign(DB.users[idx],data);showNotification('کاربر بروزرسانی شد');}
+  else{data.id=genId();DB.users.push(data);showNotification('کاربر جدید اضافه شد');}
+  closeModal();renderUsers();
+}
+function editUser(id){const u=DB.users.find(x=>x.id===id);if(u)showUserForm(u);}
+function deleteUser(id){
+  if(id<=1){showNotification('امکان حذف مدیر سیستم وجود ندارد','error');return;}
+  showModal('تأیید حذف','<p>آیا از حذف این کاربر اطمینان دارید؟</p>',
+  `<button class="btn btn-danger" onclick="DB.users=DB.users.filter(u=>u.id!==${id});closeModal();showNotification('کاربر حذف شد');renderUsers()">حذف</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`,'modal-sm');
+}
+
+function renderRoles(){
+  const roles=[
+    {id:1,name:'مدیر سیستم',permissions:'دسترسی کامل',users:1},
+    {id:2,name:'حسابدار',permissions:'حسابداری، گزارشات، خزانه',users:1},
+    {id:3,name:'انباردار',permissions:'انبار، کالا، خرید',users:1},
+    {id:4,name:'فروشنده',permissions:'فروش، مشتریان',users:1},
+    {id:5,name:'ناظر',permissions:'فقط مشاهده گزارشات',users:0},
+  ];
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'تنظیمات'},{label:'نقش‌ها',page:'roles'}])}
+    <div class="d-flex justify-between items-center mb-2">
+      <h2 class="page-title" style="margin-bottom:0">${icon('settings')} مدیریت نقش‌ها</h2>
+      <button class="btn btn-primary" onclick="showNotification('فرم افزودن نقش باز شد','info');showModal('افزودن نقش جدید','<div class=\\'form-group\\'><label class=\\'form-label\\'>نام نقش</label><input class=\\'form-control\\'></div><div class=\\'form-group\\'><label class=\\'form-label\\'>توضیحات</label><textarea class=\\'form-control\\'></textarea></div>','<button class=\\'btn btn-primary\\' onclick=\\'showNotification(\"نقش جدید اضافه شد\");closeModal()\\'>ذخیره</button><button class=\\'btn btn-outline\\' onclick=\\'closeModal()\\'>انصراف</button>')">${icon('add',16)} افزودن نقش</button>
+    </div>
+    <div class="card"><div class="card-body">
+      ${renderDataTable(roles,[
+        {key:'id',label:'#'},{key:'name',label:'نام نقش'},{key:'permissions',label:'دسترسی‌ها'},
+        {key:'users',label:'تعداد کاربران'},
+      ],{id:'roles-table'})}
+    </div></div>`;
+}
+
+function renderAccessLevels(){
+  const modules=['داشبورد','حسابداری','مشتریان','تامین‌کنندگان','کالا','انبار','خرید','فروش','خزانه','گزارشات','تنظیمات'];
+  const roles=['مدیر سیستم','حسابدار','انباردار','فروشنده','ناظر'];
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'تنظیمات'},{label:'سطح دسترسی',page:'access-levels'}])}
+    <h2 class="page-title">${icon('settings')} سطح دسترسی</h2>
+    <div class="card"><div class="card-body">
+      <table class="data-table"><thead><tr><th>ماژول</th>${roles.map(r=>`<th class="text-center">${r}</th>`).join('')}</tr></thead><tbody>
+      ${modules.map(m=>`<tr><td>${m}</td>${roles.map((r,i)=>`<td class="text-center"><input type="checkbox" ${i===0||rand(0,1)?'checked':''} onchange="showNotification('دسترسی بروزرسانی شد','info')"></td>`).join('')}</tr>`).join('')}
+      </tbody></table>
+      <button class="btn btn-primary mt-2" onclick="showNotification('سطوح دسترسی ذخیره شد')">ذخیره تغییرات</button>
+    </div></div>`;
+}
+
+function renderFiscalYear(){
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'تنظیمات'},{label:'سال مالی',page:'fiscal-year'}])}
+    <div class="d-flex justify-between items-center mb-2 flex-wrap gap-1">
+      <h2 class="page-title" style="margin-bottom:0">${icon('settings')} مدیریت سال مالی</h2>
+      <button class="btn btn-primary" onclick="showFiscalYearForm()">${icon('add',16)} ثبت سال مالی جدید</button>
+    </div>
+    <div class="card"><div class="card-header"><h3>سال مالی فعال: ${DB.company.fiscalYear||'-'}</h3></div><div class="card-body">
+      ${DB.fiscalYears&&DB.fiscalYears.length?`<table class="data-table"><thead><tr><th>عنوان</th><th>سال</th><th>تاریخ شروع</th><th>تاریخ پایان</th><th>توضیحات</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>
+      ${DB.fiscalYears.map(fy=>`<tr>
+        <td>${fy.title}</td>
+        <td><strong>${fy.year}</strong></td>
+        <td>${fy.startDate}</td>
+        <td>${fy.endDate}</td>
+        <td>${fy.description||'-'}</td>
+        <td><span class="status-badge ${fy.status==='active'?'status-active':'status-inactive'}">${fy.status==='active'?'فعال':'بسته'}</span></td>
+        <td><div class="actions">
+          ${fy.status==='active'?`<button class="btn btn-xs btn-warning" onclick="closeFiscalYear(${fy.id})" title="بستن سال">${icon('close',12)} بستن</button>`:`<button class="btn btn-xs btn-success" onclick="activateFiscalYear(${fy.id})" title="فعال‌سازی">${icon('check',12)} فعال</button>`}
+          <button class="btn btn-xs btn-outline" onclick="editFiscalYear(${fy.id})" title="ویرایش">${icon('edit',12)}</button>
+          <button class="btn btn-xs btn-danger" onclick="deleteFiscalYear(${fy.id})" title="حذف">${icon('delete',12)}</button>
+        </div></td>
+      </tr>`).join('')}
+      </tbody></table>`:'<div class="empty-state"><p class="text-muted">هنوز سال مالی ثبت نشده است. از دکمه بالا یک سال مالی جدید اضافه کنید.</p></div>'}
+    </div></div>`;
+}
+
+function showFiscalYearForm(fy=null){
+  const isEdit=!!fy;
+  const nextYear=fy?fy.year:(DB.fiscalYears&&DB.fiscalYears.length?Math.max(...DB.fiscalYears.map(f=>+f.year))+1:1403);
+  showModal(isEdit?'ویرایش سال مالی':'ثبت سال مالی جدید',`
+    <form id="fy-form" onsubmit="saveFiscalYear(event,${fy?fy.id:'null'})">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">عنوان سال مالی <span class="required">*</span></label><input class="form-control" name="title" value="${fy?.title||'سال مالی '+nextYear}" required></div>
+        <div class="form-group"><label class="form-label">سال <span class="required">*</span></label><input type="number" class="form-control" name="year" value="${fy?.year||nextYear}" required></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">تاریخ شروع <span class="required">*</span></label><input class="form-control" name="startDate" value="${fy?.startDate||nextYear+'/01/01'}" placeholder="مثال: 1403/01/01" required></div>
+        <div class="form-group"><label class="form-label">تاریخ پایان <span class="required">*</span></label><input class="form-control" name="endDate" value="${fy?.endDate||nextYear+'/12/29'}" placeholder="مثال: 1403/12/29" required></div>
+      </div>
+      <div class="form-group"><label class="form-label">وضعیت</label><select class="form-control" name="status"><option value="active" ${!fy||fy?.status==='active'?'selected':''}>فعال</option><option value="closed" ${fy?.status==='closed'?'selected':''}>بسته</option></select></div>
+      <div class="form-group"><label class="form-label">توضیحات</label><textarea class="form-control" name="description">${fy?.description||''}</textarea></div>
+    </form>`,
+  `<button class="btn btn-primary" onclick="document.getElementById('fy-form').requestSubmit()">${isEdit?'بروزرسانی':'ثبت سال مالی'}</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`);
+}
+
+function saveFiscalYear(e,id){
+  e.preventDefault();const f=new FormData(e.target);
+  if(!DB.fiscalYears)DB.fiscalYears=[];
+  const data={title:f.get('title'),year:f.get('year'),startDate:f.get('startDate'),endDate:f.get('endDate'),status:f.get('status'),description:f.get('description')};
+  if(!data.title||!data.year||!data.startDate||!data.endDate){showNotification('لطفاً تمام فیلدهای الزامی را پر کنید','error');return;}
+  // If setting active, deactivate others
+  if(data.status==='active'){DB.fiscalYears.forEach(fy=>fy.status='closed');DB.company.fiscalYear=data.year;}
+  if(id){
+    const idx=DB.fiscalYears.findIndex(fy=>fy.id===id);
+    if(idx>=0)Object.assign(DB.fiscalYears[idx],data);
+    showNotification('سال مالی با موفقیت بروزرسانی شد');
+  } else {
+    data.id=genId();
+    DB.fiscalYears.push(data);
+    showNotification('سال مالی جدید با موفقیت ثبت شد');
+  }
+  closeModal();renderFiscalYear();
+}
+
+function editFiscalYear(id){
+  if(!DB.fiscalYears)return;
+  const fy=DB.fiscalYears.find(f=>f.id===id);
+  if(fy)showFiscalYearForm(fy);
+}
+
+function deleteFiscalYear(id){
+  showModal('تأیید حذف','<p>آیا از حذف این سال مالی اطمینان دارید؟ این عملیات قابل بازگشت نیست.</p>',
+  `<button class="btn btn-danger" onclick="confirmDeleteFiscalYear(${id})">حذف</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`,'modal-sm');
+}
+
+function confirmDeleteFiscalYear(id){
+  if(!DB.fiscalYears)return;
+  const fy=DB.fiscalYears.find(f=>f.id===id);
+  if(fy&&fy.status==='active'){showNotification('امکان حذف سال مالی فعال وجود ندارد. ابتدا سال مالی دیگری را فعال کنید.','error');closeModal();return;}
+  DB.fiscalYears=DB.fiscalYears.filter(f=>f.id!==id);
+  closeModal();showNotification('سال مالی با موفقیت حذف شد');renderFiscalYear();
+}
+
+function closeFiscalYear(id){
+  showModal('بستن سال مالی','<p>آیا از بستن این سال مالی اطمینان دارید؟ پس از بستن، امکان ثبت سند در این سال وجود نخواهد داشت.</p>',
+  `<button class="btn btn-warning" onclick="confirmCloseFiscalYear(${id})">بستن سال مالی</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`,'modal-sm');
+}
+
+function confirmCloseFiscalYear(id){
+  if(!DB.fiscalYears)return;
+  const fy=DB.fiscalYears.find(f=>f.id===id);
+  if(fy){fy.status='closed';DB.company.fiscalYear='';}
+  closeModal();showNotification('سال مالی بسته شد');renderFiscalYear();
+}
+
+function activateFiscalYear(id){
+  if(!DB.fiscalYears)return;
+  DB.fiscalYears.forEach(fy=>fy.status='closed');
+  const fy=DB.fiscalYears.find(f=>f.id===id);
+  if(fy){fy.status='active';DB.company.fiscalYear=fy.year;}
+  showNotification('سال مالی '+fy.year+' فعال شد','success');renderFiscalYear();
+}
+
+function renderBackup(){
+  const content=document.getElementById('content');
+  content.innerHTML=`
+    ${getBreadcrumb([{label:'تنظیمات'},{label:'نسخه پشتیبان',page:'backup'}])}
+    <h2 class="page-title">${icon('settings')} نسخه پشتیبان</h2>
+    <div class="card"><div class="card-header"><h3>ایجاد نسخه پشتیبان</h3></div><div class="card-body">
+      <p style="margin-bottom:1rem">با کلیک بر روی دکمه زیر، یک نسخه پشتیبان از تمام اطلاعات سیستم ایجاد می‌شود.</p>
+      <button class="btn btn-primary" onclick="createBackup()">${icon('download',16)} ایجاد نسخه پشتیبان</button>
+    </div></div>
+    <div class="card"><div class="card-header"><h3>نسخه‌های پشتیبان قبلی</h3></div><div class="card-body">
+      <div class="empty-state"><p class="text-muted">هنوز نسخه پشتیبانی ایجاد نشده است</p></div>
+    </div></div>
+    <div class="card"><div class="card-header"><h3>بازیابی از فایل</h3></div><div class="card-body">
+      <div class="form-group"><label class="form-label">فایل پشتیبان را انتخاب کنید</label><input type="file" class="form-control" accept=".json" onchange="showNotification('فایل انتخاب شد. برای بازیابی کلیک کنید.','info')"></div>
+      <button class="btn btn-warning mt-1" onclick="showNotification('بازیابی با موفقیت انجام شد','success')">بازیابی</button>
+    </div></div>`;
+}
+
+function createBackup(){
+  const data=JSON.stringify(DB,null,2);
+  const blob=new Blob([data],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='backup_'+new Date().toLocaleDateString('fa-IR').replace(/\//g,'_')+'.json';
+  a.click();URL.revokeObjectURL(url);
+  showNotification('نسخه پشتیبان با موفقیت ایجاد و دانلود شد','success');
+}
+
+// ===== LOGIN / LOGOUT =====
+const CREDENTIALS = {username:'ali',password:'@1467362lI'};
+
+function handleLogin(e){
+  e.preventDefault();
+  const username=document.getElementById('login-username').value.trim();
+  const password=document.getElementById('login-password').value;
+  if(username===CREDENTIALS.username && password===CREDENTIALS.password){
+    document.getElementById('login-page').style.display='none';
+    document.getElementById('app').classList.remove('hidden');
+    document.getElementById('login-error').style.display='none';
+    // Update last login
+    const user=DB.users.find(u=>u.username==='ali');
+    if(user)user.lastLogin=new Date().toLocaleDateString('fa-IR')+' '+new Date().toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});
+    renderSidebar();
+    navigate('dashboard');
+    showNotification('خوش آمدید! با موفقیت وارد سیستم شدید.','success');
+  } else {
+    document.getElementById('login-error').style.display='block';
+    document.getElementById('login-password').value='';
+    document.getElementById('login-password').focus();
+  }
+}
+
+function handleLogout(){
+  showModal('خروج از سیستم','<p>آیا مطمئن هستید که می‌خواهید از سیستم خارج شوید؟</p>',
+  `<button class="btn btn-danger" onclick="doLogout()">بله، خروج</button><button class="btn btn-outline" onclick="closeModal()">انصراف</button>`,'modal-sm');
+}
+
+function doLogout(){
+  closeModal();
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('login-page').style.display='flex';
+  document.getElementById('login-username').value='';
+  document.getElementById('login-password').value='';
+  document.getElementById('login-error').style.display='none';
+  document.getElementById('login-username').focus();
+}
+
+function togglePasswordVisibility(){
+  const inp=document.getElementById('login-password');
+  inp.type=inp.type==='password'?'text':'password';
+}
+
+// ===== INITIALIZATION =====
+// App starts with login page visible, app hidden
+document.getElementById('login-username').focus();
+
+// Handle window resize
+window.addEventListener('resize',()=>{
+  if(window.innerWidth>768){
+    document.getElementById('sidebar').classList.remove('mobile-open');
+    document.getElementById('mobile-overlay').classList.remove('show');
+  }
+});
+
+// Allow Enter key on login
+document.getElementById('login-password').addEventListener('keydown',e=>{
+  if(e.key==='Enter')document.querySelector('.login-form').requestSubmit();
+});
+</script>
+</body>
+</html>
